@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 245, 245, 247;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 28, 28, 30;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgb(var(--background-end-rgb))
+  ) rgb(var(--background-start-rgb));
+  -webkit-tap-highlight-color: transparent; /* désactive surbrillance au toucher */
+  -webkit-touch-callout: none; /* désactive menu contextuel sur iPhone */
+  -webkit-user-select: none; /* désactive sélection texte */
+  overscroll-behavior: none; /* désactive effet de rebond scrolling */
+}
+
+/* Style iOS pour les éléments */
+@layer components {
+  .ios-button {
+    @apply font-semibold text-apple-blue active:opacity-70 transition-opacity duration-200;
+  }
+
+  .ios-card {
+    @apply rounded-xl bg-white/80 dark:bg-apple-dark/80 backdrop-blur-lg shadow-lg p-4;
+  }
+
+  .ios-input {
+    @apply rounded-lg bg-gray-100 dark:bg-gray-800 p-3 outline-none focus:ring-2 focus:ring-apple-blue;
+  }
+  
+  .ios-switch {
+    @apply relative inline-block w-12 h-6 rounded-full bg-gray-300 dark:bg-gray-600;
+  }
+  
+  .ios-switch:after {
+    content: '';
+    @apply absolute w-5 h-5 rounded-full bg-white left-0.5 top-0.5 transition-transform duration-300;
+  }
+  
+  .ios-switch.active:after {
+    @apply transform translate-x-6 bg-white;
+  }
+  
+  .ios-switch.active {
+    @apply bg-apple-green;
+  }
+}
+
+/* Pour faire en sorte que l'app soit toujours en mode standalone */
+@media (display-mode: standalone) {
+  body {
+    @apply fixed inset-0 overflow-hidden;
+  }
+}
+
+/* Styles pour l'imitation de Dynamic Island */
+.dynamic-island {
+  @apply fixed top-2 left-1/2 transform -translate-x-1/2 px-6 py-2 rounded-full bg-black text-white z-50;
+} 

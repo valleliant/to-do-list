@@ -15,7 +15,7 @@ Ce document détaille le projet de création d’une Progressive Web App (PWA) d
   * Stockage local offline-first.
   * Intégration de la météo actuelle selon position.
   * Messages de bienvenue personnalisés selon nom et heure.
-  * UX/UI ultra clean, 100% adapté à l’iPhone, style Apple.
+  * UX/UI ultra clean, 100% adapté à l’iPhone, style Apple, toujours mode fullscreen.
 
 ---
 
@@ -89,7 +89,7 @@ Client PWA (Next.js)
 | F6  | Ajout à l’écran d’accueil       | Installation PWA classique via Safari.                                                      | Must     |
 | F7  | Météo locale                    | Affiche la météo actuelle basée sur la géolocalisation de l’utilisateur.                    | Must     |
 | F8  | Message personnalisé            | Affiche « Bonjour/Bonsoir/Bien dormi » + nom saisi par l’utilisateur selon l’heure.         | Must     |
-| F9  | Fake Dynamic Island (optionnel) | Composant en haut imitant la Dynamic Island pour tâche active/timer.                        | Could    |
+| F9  | Fake Dynamic Island (optionnel) | Composant en haut imitant la Dynamic Island pour tâche active/timer.                        | Must     |
 | F10 | Thème clair/sombre              | Basé sur préférence système iOS.                                                            | Could    |
 
 ---
@@ -101,6 +101,7 @@ Client PWA (Next.js)
 * **Sécurité** : HTTPS, permissions explicites.
 * **UX iOS** : Utiliser les conventions Apple (gestes, tailles, polices).
 * **Maintenabilité** : Code TS strict, architecture modulaire.
+* **Fullscreen** : Faire en sorte que l'app soit toujours en mode standalone.
 
 ---
 
@@ -116,7 +117,7 @@ Client PWA (Next.js)
 
 ### 9. Critères d’acceptation
 
-* Gestion des tâches fonctionnelle offline et online (futur).
+* Gestion des tâches fonctionnelle offline et online (intégration futur).
 * Notifications push reçoivent les rappels configurés.
 * Mode Focus immersif et timer opérationnel.
 * Météo locale fiable et actualisée.

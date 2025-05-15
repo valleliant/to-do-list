@@ -1,0 +1,17 @@
+{
+  "name": "Todo List",
+  "short_name": "Tâches",
+  "description": "Application de gestion de tâches quotidiennes",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#007AFF",
+  "icons": [
+    {
+      "src": "/icons/72x72-icon.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    }
+  ]
+} 
