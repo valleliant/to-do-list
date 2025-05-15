@@ -3,9 +3,16 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   output: 'standalone',
-  experimental: {
-    appDir: true
-  }
+  trailingSlash: true,
+  // Configuration pour gérer les erreurs 404
+  async rewrites() {
+    return [
+      {
+        source: '/:path*',
+        destination: '/',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig; 
