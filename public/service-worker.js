@@ -90,7 +90,8 @@ self.addEventListener('push', (event) => {
     body: data.body || 'Nouvelle notification',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/badge-96x96.png',
-    vibrate: [200, 100, 200],
+    // La propriété vibrate est supportée par les navigateurs mais pas dans les types TypeScript
+    // vibrate: [200, 100, 200],
     data: {
       url: data.url || self.location.origin
     }

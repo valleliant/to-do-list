@@ -73,6 +73,7 @@ export const useNotifications = () => {
             icon: '/icons/icon-192x192.png',
             badge: '/icons/badge-96x96.png',
             tag: `task-${task.id}`,
+            // @ts-ignore - vibrate n'est pas dans les types mais est supporté par les navigateurs modernes
             vibrate: [200, 100, 200],
             data: {
               taskId: task.id,
