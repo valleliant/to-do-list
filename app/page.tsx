@@ -91,7 +91,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen px-4 pb-20">
+    <main className="min-h-screen px-4 pb-20 pt-6 bg-gradient-to-b from-white to-soft-blue dark:from-apple-dark dark:to-black">
       {/* Dynamic Island */}
       <DynamicIsland 
         activeTask={activeTask} 
@@ -119,7 +119,7 @@ export default function Home() {
             className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-black/80 backdrop-blur-lg z-50"
           >
             <div className="ios-card w-full max-w-sm p-6">
-              <h2 className="text-xl font-semibold mb-4">Bienvenue !</h2>
+              <h2 className="text-xl font-semibold mb-4 gradient-text">Bienvenue !</h2>
               <p className="mb-4">Comment souhaitez-vous être appelé ?</p>
               
               <input
@@ -133,7 +133,7 @@ export default function Home() {
               
               <button
                 onClick={() => handleSaveUserName(userName)}
-                className="bg-apple-blue text-white py-2 px-4 rounded-lg font-medium w-full"
+                className="ios-button-primary w-full"
               >
                 Continuer
               </button>
@@ -142,56 +142,75 @@ export default function Home() {
         )}
       </AnimatePresence>
       
-      <div className="max-w-md mx-auto pt-12">
+      <div className="max-w-md mx-auto pt-6">
         {/* En-tête avec message de bienvenue */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-1">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8"
+        >
+          <h1 className="text-3xl font-bold mb-1 gradient-text">
             {getGreeting(userName)}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400">
             {getProductivityMessage()}
           </p>
-        </div>
+        </motion.div>
         
         {/* Widget météo */}
-        <div className="mb-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-8"
+        >
           <WeatherWidget
             weather={weather}
             loading={weatherLoading}
             error={weatherError}
             onRefresh={refreshWeather}
           />
-        </div>
+        </motion.div>
         
         {/* Liste des tâches */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mb-6"
+        >
+          <div className="flex justify-between items-center mb-5">
             <h2 className="text-xl font-semibold">Mes tâches</h2>
             
             <div className="flex space-x-2">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setIsFocusMode(true)}
-                className="text-apple-blue p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="bg-gradient-to-br from-apple-purple to-apple-indigo text-white p-2 rounded-full shadow-sm"
                 aria-label="Mode focus"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
-              </button>
+              </motion.button>
               
-              <button
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   if (!notificationsPermissionGranted) {
                     requestNotificationsPermission();
                   }
                 }}
-                className="text-apple-blue p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="bg-gradient-to-br from-apple-teal to-apple-blue text-white p-2 rounded-full shadow-sm"
                 aria-label="Activer les notifications"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
                 </svg>
-              </button>
+              </motion.button>
             </div>
           </div>
           
@@ -204,9 +223,16 @@ export default function Home() {
               {tasksError}
             </div>
           ) : tasks.length === 0 ? (
-            <div className="ios-card p-6 text-center text-gray-500 dark:text-gray-400">
-              <p>Vous n'avez pas encore de tâches.</p>
-              <p className="mt-2">Ajoutez-en une !</p>
+            <div className="ios-card p-6 glassmorphism flex flex-col items-center justify-center py-12">
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, repeatType: 'loop' }}
+                className="mb-4 text-4xl"
+              >
+                ✨
+              </motion.div>
+              <p className="text-gray-700 dark:text-gray-300 text-center mb-1">Vous n'avez pas encore de tâches</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Profitez de cette journée pour ajouter vos premières tâches</p>
             </div>
           ) : (
             <AnimatePresence>
@@ -224,7 +250,7 @@ export default function Home() {
               ))}
             </AnimatePresence>
           )}
-        </div>
+        </motion.div>
         
         {/* Formulaire d'ajout/édition de tâche */}
         <AnimatePresence>
@@ -246,13 +272,13 @@ export default function Home() {
           <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowAddTaskForm(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-apple-blue text-white flex items-center justify-center shadow-lg"
-            aria-label="Ajouter une tâche"
+            className="floating-button bg-gradient-to-br from-apple-blue to-apple-teal"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
           </motion.button>
         )}

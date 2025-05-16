@@ -3,16 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 245, 245, 247;
+  --foreground-rgb: 30, 30, 30;
+  --background-start-rgb: 248, 248, 252;
   --background-end-rgb: 255, 255, 255;
+  
+  /* Couleurs d'accent */
+  --accent-primary: 0, 122, 255;
+  --accent-secondary: 255, 59, 48;
+  --accent-tertiary: 52, 199, 89;
+  --accent-quaternary: 255, 149, 0;
+  --accent-quinary: 175, 82, 222;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
     --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 28, 28, 30;
+    --background-end-rgb: 20, 20, 24;
+    
+    /* Les couleurs d'accent restent les mêmes en mode sombre */
   }
 }
 
@@ -27,29 +36,38 @@ body {
   -webkit-touch-callout: none; /* désactive menu contextuel sur iPhone */
   -webkit-user-select: none; /* désactive sélection texte */
   overscroll-behavior: none; /* désactive effet de rebond scrolling */
+  font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif;
 }
 
 /* Style iOS pour les éléments */
 @layer components {
   .ios-button {
-    @apply font-semibold text-apple-blue active:opacity-70 transition-opacity duration-200;
+    @apply font-semibold text-apple-blue active:opacity-70 transition-opacity duration-200 rounded-xl px-4 py-3;
+  }
+
+  .ios-button-primary {
+    @apply bg-apple-blue text-white font-medium rounded-full py-3 px-5 active:opacity-90 transition-all duration-200 shadow-sm;
+  }
+
+  .ios-button-secondary {
+    @apply bg-white/70 dark:bg-apple-dark/70 text-apple-blue dark:text-apple-blue font-medium rounded-full py-3 px-5 border border-gray-100 dark:border-gray-800 active:opacity-90 transition-all duration-200 backdrop-blur-sm shadow-sm;
   }
 
   .ios-card {
-    @apply rounded-xl bg-white/80 dark:bg-apple-dark/80 backdrop-blur-lg shadow-lg p-4;
+    @apply rounded-2xl bg-white/90 dark:bg-apple-dark/90 backdrop-blur-lg shadow-sm border border-gray-100 dark:border-gray-800 p-4 transition-all duration-300;
   }
 
   .ios-input {
-    @apply rounded-lg bg-gray-100 dark:bg-gray-800 p-3 outline-none focus:ring-2 focus:ring-apple-blue;
+    @apply rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 outline-none focus:ring-2 focus:ring-apple-blue border border-transparent focus:border-apple-blue/20 transition-all duration-200;
   }
   
   .ios-switch {
-    @apply relative inline-block w-12 h-6 rounded-full bg-gray-300 dark:bg-gray-600;
+    @apply relative inline-block w-12 h-6 rounded-full bg-gray-300 dark:bg-gray-600 transition-all duration-300;
   }
   
   .ios-switch:after {
     content: '';
-    @apply absolute w-5 h-5 rounded-full bg-white left-0.5 top-0.5 transition-transform duration-300;
+    @apply absolute w-5 h-5 rounded-full bg-white left-0.5 top-0.5 transition-transform duration-300 shadow-sm;
   }
   
   .ios-switch.active:after {
@@ -58,6 +76,35 @@ body {
   
   .ios-switch.active {
     @apply bg-apple-green;
+  }
+
+  /* Nouveaux styles pour les designs épurés */
+  .floating-button {
+    @apply fixed bottom-6 right-6 w-14 h-14 bg-apple-blue text-white rounded-full flex items-center justify-center shadow-lg transform transition-transform active:scale-95 z-40;
+  }
+
+  .task-priority-high {
+    @apply border-l-4 border-apple-red;
+  }
+  
+  .task-priority-medium {
+    @apply border-l-4 border-apple-blue;
+  }
+  
+  .task-priority-low {
+    @apply border-l-4 border-apple-green;
+  }
+
+  .glassmorphism {
+    @apply bg-white/70 dark:bg-black/70 backdrop-blur-md border border-gray-100/30 dark:border-gray-800/30;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-apple-blue to-apple-green;
+  }
+  
+  .gradient-accent {
+    @apply bg-gradient-to-br from-apple-blue to-purple-500;
   }
 }
 
@@ -70,5 +117,44 @@ body {
 
 /* Styles pour l'imitation de Dynamic Island */
 .dynamic-island {
-  @apply fixed top-2 left-1/2 transform -translate-x-1/2 px-6 py-2 rounded-full bg-black text-white z-50;
+  @apply fixed top-2 left-1/2 transform -translate-x-1/2 py-2 px-6 rounded-full bg-black text-white z-50 shadow-lg transition-all duration-300 flex items-center gap-2;
+  min-width: 120px;
+  max-width: 90%;
+} 
+
+.dynamic-island-expanded {
+  @apply py-4 px-6 rounded-2xl;
+  min-width: 90%;
+}
+
+/* Animations fluides */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pour les superpositions de texte */
+.text-shadow {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Pour les scrollbars plus discrètes */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-apple-gray/30 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-apple-gray/50;
 } 
