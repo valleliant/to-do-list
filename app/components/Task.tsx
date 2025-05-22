@@ -21,25 +21,25 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       case 'high':
         return {
           color: 'bg-red-500',
-          icon: '🔴',
+          bullet: '🔴',
           label: 'Haute'
         };
       case 'medium':
         return {
           color: 'bg-orange-500',
-          icon: '🟠',
+          bullet: '🟠',
           label: 'Moyenne'
         };
       case 'low':
         return {
           color: 'bg-green-500',
-          icon: '🟢',
+          bullet: '🟢',
           label: 'Basse'
         };
       default:
         return {
           color: 'bg-blue-500',
-          icon: '⚪',
+          bullet: '⚪',
           label: 'Non définie'
         };
     }
@@ -95,19 +95,27 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       whileTap="tap"
       layout
       onClick={() => onView(task)}
-      className="bg-white rounded-xl shadow-sm mb-3 p-3 cursor-pointer"
+      className="bg-white/10 backdrop-blur-sm rounded-xl mb-3 p-4 cursor-pointer"
     >
       <div className="flex items-start">
-        <div className={`w-2 h-2 ${priorityData.color} rounded-full mt-2 mr-2`} />
+        <span className="mr-3">{priorityData.bullet}</span>
         
         <div className="flex-grow">
-          <h3 className="font-medium text-base text-gray-800">
+          <h3 className="font-medium text-base text-white">
             {task.title}
           </h3>
           
-          <p className="text-xs text-gray-500 mt-1">
-            {task.description?.substring(0, 50)}{task.description && task.description.length > 50 ? '...' : ''}
-          </p>
+          {task.description && (
+            <p className="text-xs text-white/70 mt-1">
+              {task.description.substring(0, 50)}{task.description.length > 50 ? '...' : ''}
+            </p>
+          )}
+          
+          {task.dueDate && (
+            <p className="text-xs text-gray-400 mt-1">
+              {dueDateText}
+            </p>
+          )}
         </div>
         
         <button 
@@ -115,7 +123,7 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
             e.stopPropagation();
             onEdit(task.id);
           }}
-          className="text-gray-400 p-1"
+          className="text-white/70 p-1"
           aria-label="Options"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

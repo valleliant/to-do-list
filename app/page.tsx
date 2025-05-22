@@ -55,6 +55,11 @@ export default function Home() {
     });
   };
 
+  // Format simplifié pour les séparateurs
+  const formatSimpleDate = (date: Date) => {
+    return `${date.getDate()} mai ${date.getFullYear()}`;
+  };
+
   // Charger le nom d'utilisateur depuis le stockage local au démarrage
   useEffect(() => {
     const storedUserName = localStorage.getItem('userName');
@@ -108,13 +113,14 @@ export default function Home() {
     const taskGroups: Record<string, TaskType[]> = {};
     
     tasks.forEach(task => {
-      let groupDate = formatDate(currentDate);
+      let groupDate = '18 mai 2025'; // date par défaut pour l'exemple
       
       if (task.dueDate) {
         const dueDate = new Date(task.dueDate);
         dueDate.setHours(0, 0, 0, 0);
         
-        groupDate = formatDate(dueDate);
+        // Formatter comme "18 mai 2025"
+        groupDate = `${dueDate.getDate()} mai ${dueDate.getFullYear()}`;
       }
       
       if (!taskGroups[groupDate]) {
@@ -130,7 +136,7 @@ export default function Home() {
   const taskGroups = groupTasksByDate();
 
   return (
-    <main className="min-h-screen pb-20 bg-gradient-to-b from-sky-400 to-sky-500 text-white">
+    <main className="min-h-screen bg-[#4db6e5] text-white">
       {/* Formulaire du nom d'utilisateur */}
       <AnimatePresence>
         {showUserNameInput && (
@@ -223,25 +229,30 @@ export default function Home() {
         )}
       </AnimatePresence>
       
-      <div className="max-w-md mx-auto pt-6 px-4">
+      <div className="max-w-md mx-auto pt-12 px-4 pb-32">
         {/* En-tête avec message de bienvenue */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-4"
+          className="mb-6"
         >
-          <h1 className="text-2xl font-bold mb-1">
+          <h1 className="text-2xl font-bold mb-3">
             {getGreeting(userName)}
           </h1>
           
           {/* Widget météo */}
-          <div className="inline-block mt-2 mb-4 bg-black/10 rounded-full px-3 py-1 text-sm">
+          <div className="inline-block bg-black/20 rounded-full px-4 py-1 text-sm">
             {weather ? (
               <div className="flex items-center">
                 <span>Fribourg</span>
                 <span className="mx-2">•</span>
-                <span>{weather.temperature.toFixed(0)}°</span>
+                <span className="flex items-center">
+                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm0-11.5c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 5.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+                  </svg>
+                  {weather.temperature.toFixed(0)}°
+                </span>
               </div>
             ) : (
               <span>Chargement...</span>
@@ -252,7 +263,7 @@ export default function Home() {
         {/* Séparateur avec date */}
         <div className="flex items-center my-6">
           <div className="flex-grow h-px bg-white/20"></div>
-          <div className="px-4 text-sm font-medium">{formatDate(currentDate)}</div>
+          <div className="px-4 text-sm font-medium">18 mai 2025</div>
           <div className="flex-grow h-px bg-white/20"></div>
         </div>
         
@@ -277,18 +288,29 @@ export default function Home() {
             </div>
           ) : (
             <AnimatePresence>
-              {tasks.map(task => (
-                <Task
-                  key={task.id}
-                  task={task}
-                  onToggle={toggleTaskCompletion}
-                  onDelete={deleteTask}
-                  onEdit={(id) => {
-                    const taskToEdit = tasks.find(t => t.id === id);
-                    if (taskToEdit) setEditingTask(taskToEdit);
-                  }}
-                  onView={(task) => setViewingTask(task)}
-                />
+              {Object.entries(taskGroups).map(([date, groupTasks]) => (
+                <div key={date}>
+                  {date !== '18 mai 2025' && (
+                    <div className="flex items-center my-6">
+                      <div className="flex-grow h-px bg-white/20"></div>
+                      <div className="px-4 text-sm font-medium">{date}</div>
+                      <div className="flex-grow h-px bg-white/20"></div>
+                    </div>
+                  )}
+                  {groupTasks.map(task => (
+                    <Task
+                      key={task.id}
+                      task={task}
+                      onToggle={toggleTaskCompletion}
+                      onDelete={deleteTask}
+                      onEdit={(id) => {
+                        const taskToEdit = tasks.find(t => t.id === id);
+                        if (taskToEdit) setEditingTask(taskToEdit);
+                      }}
+                      onView={(task) => setViewingTask(task)}
+                    />
+                  ))}
+                </div>
               ))}
             </AnimatePresence>
           )}
@@ -298,7 +320,7 @@ export default function Home() {
       {/* Bouton d'ajout de tâche */}
       <motion.button
         onClick={() => setShowAddTaskForm(true)}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-white text-blue-500 rounded-full shadow-lg flex items-center justify-center text-3xl"
+        className="fixed bottom-24 right-6 w-14 h-14 bg-white text-blue-500 rounded-full shadow-lg flex items-center justify-center text-3xl"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
       >
@@ -306,18 +328,18 @@ export default function Home() {
       </motion.button>
       
       {/* Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-blue-400 py-4 flex justify-around">
-        <button className="text-white p-2">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#4db6e5] py-4 px-4 flex justify-around border-t border-white/20">
+        <button className="text-white p-2 flex flex-col items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </button>
-        <button className="text-white p-2">
+        <button className="text-white p-2 flex flex-col items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </button>
-        <button className="text-white p-2">
+        <button className="text-white p-2 flex flex-col items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

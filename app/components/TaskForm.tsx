@@ -69,21 +69,21 @@ const TaskForm: React.FC<TaskFormProps> = ({
       animate="visible"
       exit="exit"
       variants={variants}
-      className="ios-card"
+      className="bg-slate-50 rounded-xl p-6 shadow-lg w-full max-w-md"
     >
       <form onSubmit={handleSubmit}>
-        <h2 className="text-xl font-semibold mb-4">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
           {isEditing ? 'Modifier la tâche' : 'Nouvelle tâche'}
         </h2>
         
         <div className="mb-4">
-          <label htmlFor="title" className="block text-sm font-medium mb-1">
+          <label htmlFor="title" className="block text-sm font-medium mb-1 text-gray-700">
             Titre
           </label>
           <input
             type="text"
             id="title"
-            className={`ios-input w-full ${titleError ? 'border-apple-red' : ''}`}
+            className={`w-full p-2 rounded-lg border ${titleError ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-1 focus:ring-blue-500`}
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
@@ -93,17 +93,17 @@ const TaskForm: React.FC<TaskFormProps> = ({
             autoFocus
           />
           {titleError && (
-            <p className="text-apple-red text-xs mt-1">{titleError}</p>
+            <p className="text-red-500 text-xs mt-1">{titleError}</p>
           )}
         </div>
         
         <div className="mb-4">
-          <label htmlFor="description" className="block text-sm font-medium mb-1">
+          <label htmlFor="description" className="block text-sm font-medium mb-1 text-gray-700">
             Description
           </label>
           <textarea
             id="description"
-            className="ios-input w-full min-h-[80px]"
+            className="w-full p-2 rounded-lg border border-gray-300 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-blue-500"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Détails supplémentaires..."
@@ -111,7 +111,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         </div>
         
         <div className="mb-4">
-          <label htmlFor="priority" className="block text-sm font-medium mb-1">
+          <label htmlFor="priority" className="block text-sm font-medium mb-1 text-gray-700">
             Priorité
           </label>
           <div className="flex space-x-2">
@@ -120,14 +120,14 @@ const TaskForm: React.FC<TaskFormProps> = ({
                 key={p}
                 type="button"
                 onClick={() => setPriority(p)}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex-1 py-1 px-2 rounded-lg text-sm font-medium border ${
                   priority === p 
                     ? p === 'high' 
-                      ? 'bg-red-500 text-white' 
+                      ? 'bg-red-500 text-white border-red-500' 
                       : p === 'medium'
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-green-500 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-green-500 text-white border-green-500'
+                    : 'bg-white text-gray-700 border-gray-300'
                 }`}
               >
                 {p === 'low' ? 'Basse' : p === 'medium' ? 'Moyenne' : 'Haute'}
@@ -137,13 +137,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
         </div>
         
         <div className="mb-6">
-          <label htmlFor="dueDate" className="block text-sm font-medium mb-1">
+          <label htmlFor="dueDate" className="block text-sm font-medium mb-1 text-gray-700">
             Échéance (optionnelle)
           </label>
           <input
             type="date"
             id="dueDate"
-            className="ios-input w-full"
+            className="w-full p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
@@ -153,13 +153,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="ios-button"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white"
           >
             Annuler
           </button>
           <button
             type="submit"
-            className="bg-apple-blue text-white py-2 px-4 rounded-lg font-medium"
+            className="bg-blue-500 text-white py-2 px-4 rounded-lg font-medium"
           >
             {isEditing ? 'Mettre à jour' : 'Ajouter'}
           </button>

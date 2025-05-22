@@ -47,7 +47,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onEdit }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-gray-900 text-white z-50 flex flex-col"
+      className="fixed inset-0 bg-[#1e3a4c] text-white z-50 flex flex-col"
     >
       {/* Header */}
       <header className="flex items-center p-4">
@@ -66,27 +66,27 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onEdit }) => {
 
       {/* Contenu */}
       <div className="p-6 flex-grow flex flex-col">
-        <h1 className="text-2xl font-bold mb-6">{task.title}</h1>
+        <h1 className="text-2xl font-bold mb-8">{task.title}</h1>
         
-        <div className="mb-6">
-          <h2 className="text-lg mb-2">Description :</h2>
-          <div className="bg-white bg-opacity-10 rounded-lg p-4">
+        <div className="mb-8">
+          <h2 className="text-lg mb-3">Description :</h2>
+          <div className="bg-white/10 rounded-lg p-4">
             <p className="text-sm">{task.description || 'Aucune description'}</p>
           </div>
         </div>
         
-        <div className="mb-6">
-          <h2 className="text-lg mb-2">À faire pour le :</h2>
-          <div className="bg-white bg-opacity-5 rounded-lg p-3 inline-block">
-            <p>{task.dueDate ? formatDate(task.dueDate) : 'Non défini'}</p>
+        <div className="mb-8">
+          <h2 className="text-lg mb-3">À faire pour le :</h2>
+          <div className="bg-white/5 rounded-lg p-3 inline-block">
+            <span>{task.dueDate ? formatDate(task.dueDate) : 'Non défini'}</span>
           </div>
         </div>
         
         <div>
-          <h2 className="text-lg mb-2">Priorité :</h2>
+          <h2 className="text-lg mb-3">Priorité :</h2>
           <div className="flex items-center">
             <div className={`w-4 h-4 ${getPriorityColor()} rounded-full mr-2`}></div>
-            <div className="bg-white bg-opacity-5 rounded-lg px-4 py-2">
+            <div className="bg-white/5 rounded-lg px-4 py-2">
               {getPriorityLabel()}
             </div>
           </div>
@@ -94,7 +94,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onEdit }) => {
       </div>
 
       {/* Navigation */}
-      <div className="bg-blue-400 py-4 flex justify-around">
+      <div className="bg-[#4db6e5] py-4 flex justify-around">
         <button className="text-white p-2">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
