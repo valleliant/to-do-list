@@ -4,6 +4,7 @@ import localforage from 'localforage';
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
   dueDate?: string;
@@ -47,10 +48,11 @@ export const useTasks = () => {
   }, [tasks, loading]);
 
   // Ajouter une nouvelle tâche
-  const addTask = async (title: string, priority: Task['priority'] = 'medium', dueDate?: string) => {
+  const addTask = async (title: string, priority: Task['priority'] = 'medium', dueDate?: string, description?: string) => {
     const newTask: Task = {
       id: Date.now().toString(),
       title,
+      description,
       completed: false,
       priority,
       dueDate,

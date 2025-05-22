@@ -100,41 +100,27 @@ const FocusMode: React.FC<FocusModeProps> = ({ onClose }) => {
     setTimeRemaining(DEFAULT_FOCUS_TIME);
   };
 
-  // Animation variants avec Framer Motion
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { duration: 0.5 }
-    },
-    exit: { 
-      opacity: 0,
-      transition: { duration: 0.3 }
-    }
-  };
-
   return (
     <motion.div 
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      variants={containerVariants}
-      className="fixed inset-0 bg-white dark:bg-black flex flex-col items-center justify-center z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-gray-900 text-white flex flex-col z-50"
     >
-      <button 
-        onClick={onClose}
-        className="absolute top-4 right-4 text-apple-blue p-2 rounded-full"
-        aria-label="Fermer le mode focus"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+      <header className="flex items-center p-4">
+        <button onClick={onClose} className="text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </button>
+        <div className="flex-grow text-center">
+          <h1 className="text-xl font-bold">Mode Focus</h1>
+        </div>
+        <div className="w-6"></div> {/* Pour équilibrer le header */}
+      </header>
       
-      <div className="flex flex-col items-center">
-        <h1 className="text-2xl font-bold mb-8">Mode Focus</h1>
-        
-        <div className="relative w-64 h-64 mb-8">
+      <div className="flex-grow flex flex-col items-center justify-center p-6">
+        <div className="relative w-64 h-64 mb-10">
           {/* Cercle de fond */}
           <svg className="w-full h-full" viewBox="0 0 100 100">
             <circle
@@ -142,7 +128,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ onClose }) => {
               cy="50"
               r="45"
               fill="none"
-              stroke="rgba(128, 128, 128, 0.2)"
+              stroke="rgba(255, 255, 255, 0.2)"
               strokeWidth="5"
             />
             
@@ -152,7 +138,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ onClose }) => {
               cy="50"
               r="45"
               fill="none"
-              stroke={timerState === 'focus' ? '#007AFF' : '#34C759'}
+              stroke={timerState === 'focus' ? '#FF9500' : '#34C759'}
               strokeWidth="5"
               strokeDasharray={`${2 * Math.PI * 45}`}
               strokeDashoffset={`${2 * Math.PI * 45 * (1 - calculateCircleProgress() / 100)}`}
@@ -163,21 +149,21 @@ const FocusMode: React.FC<FocusModeProps> = ({ onClose }) => {
           
           {/* Affichage du temps */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-4xl font-bold mb-2">
+            <span className="text-5xl font-bold mb-2">
               {formatTime(timeRemaining)}
             </span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm text-gray-300">
               {timerState === 'focus' ? 'Concentration' : timerState === 'break' ? 'Pause' : 'Prêt ?'}
             </span>
           </div>
         </div>
         
-        <div className="flex space-x-4">
+        <div className="flex space-x-4 mb-8">
           {timerState === 'idle' || timerState === 'completed' ? (
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={startFocusTimer}
-              className="bg-apple-blue text-white px-6 py-3 rounded-full font-semibold"
+              className="bg-blue-500 text-white px-6 py-3 rounded-full font-medium"
             >
               {timerState === 'completed' ? 'Nouveau cycle' : 'Démarrer'}
             </motion.button>
@@ -186,10 +172,10 @@ const FocusMode: React.FC<FocusModeProps> = ({ onClose }) => {
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={toggleTimer}
-                className={`px-6 py-3 rounded-full font-semibold ${
+                className={`px-6 py-3 rounded-full font-medium ${
                   isRunning 
-                    ? 'bg-apple-red text-white' 
-                    : 'bg-apple-green text-white'
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-green-500 text-white'
                 }`}
               >
                 {isRunning ? 'Pause' : 'Reprendre'}
@@ -198,7 +184,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ onClose }) => {
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={resetTimer}
-                className="bg-gray-200 dark:bg-gray-800 px-6 py-3 rounded-full font-semibold"
+                className="bg-gray-700 text-white px-6 py-3 rounded-full font-medium"
               >
                 Réinitialiser
               </motion.button>
@@ -207,12 +193,32 @@ const FocusMode: React.FC<FocusModeProps> = ({ onClose }) => {
         </div>
         
         {cycles > 0 && (
-          <div className="mt-8 text-center">
-            <p className="text-gray-500 dark:text-gray-400">
+          <div className="text-center">
+            <p className="text-gray-300">
               Cycles complétés : {cycles}
             </p>
           </div>
         )}
+      </div>
+      
+      {/* Navigation */}
+      <div className="bg-blue-400 py-4 flex justify-around">
+        <button className="text-white p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </button>
+        <button className="text-white p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </button>
+        <button className="text-white p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
       </div>
     </motion.div>
   );

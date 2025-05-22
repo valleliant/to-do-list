@@ -5,23 +5,23 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useTasks, Task as TaskType } from './hooks/useTasks';
 import { useWeather } from './hooks/useWeather';
 import { useNotifications } from './hooks/useNotifications';
-import { getGreeting, getProductivityMessage } from './utils/greeting';
+import { getGreeting } from './utils/greeting';
 
 import Task from './components/Task';
+import TaskDetail from './components/TaskDetail';
 import TaskForm from './components/TaskForm';
 import WeatherWidget from './components/WeatherWidget';
 import FocusMode from './components/FocusMode';
-import DynamicIsland from './components/DynamicIsland';
 
 export default function Home() {
   // États locaux
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState('Thibaud');
   const [showUserNameInput, setShowUserNameInput] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskType | null>(null);
+  const [viewingTask, setViewingTask] = useState<TaskType | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
-  const [activeTask, setActiveTask] = useState<TaskType | null>(null);
-  const [focusTimeRemaining, setFocusTimeRemaining] = useState<number | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   // Hooks personnalisés
   const { 
@@ -46,6 +46,15 @@ export default function Home() {
     requestPermission: requestNotificationsPermission
   } = useNotifications();
 
+  // Format de date pour l'affichage
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
   // Charger le nom d'utilisateur depuis le stockage local au démarrage
   useEffect(() => {
     const storedUserName = localStorage.getItem('userName');
@@ -68,7 +77,8 @@ export default function Home() {
     await addTask(
       taskData.title || '',
       taskData.priority || 'medium',
-      taskData.dueDate
+      taskData.dueDate,
+      taskData.description
     );
     setShowAddTaskForm(false);
   };
@@ -78,27 +88,131 @@ export default function Home() {
     if (taskData.id) {
       await updateTask(taskData.id, {
         title: taskData.title,
+        description: taskData.description,
         priority: taskData.priority,
         dueDate: taskData.dueDate,
       });
       setEditingTask(null);
+      setViewingTask(null);
     }
   };
 
-  // Gérer la définition d'une tâche active
-  const handleSetActiveTask = (task: TaskType) => {
-    setActiveTask(task);
+  // Grouper les tâches par date
+  const groupTasksByDate = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const taskGroups: Record<string, TaskType[]> = {};
+    
+    tasks.forEach(task => {
+      let groupDate = formatDate(currentDate);
+      
+      if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        groupDate = formatDate(dueDate);
+      }
+      
+      if (!taskGroups[groupDate]) {
+        taskGroups[groupDate] = [];
+      }
+      
+      taskGroups[groupDate].push(task);
+    });
+    
+    return taskGroups;
   };
 
+  const taskGroups = groupTasksByDate();
+
   return (
-    <main className="min-h-screen px-4 pb-20 pt-6 bg-gradient-to-b from-white to-soft-blue dark:from-apple-dark dark:to-black">
-      {/* Dynamic Island */}
-      <DynamicIsland 
-        activeTask={activeTask} 
-        isFocusMode={isFocusMode} 
-        focusTimeRemaining={focusTimeRemaining}
-        onOpenFocus={() => setIsFocusMode(true)}
-      />
+    <main className="min-h-screen pb-20 bg-gradient-to-b from-sky-400 to-sky-500 text-white">
+      {/* Formulaire du nom d'utilisateur */}
+      <AnimatePresence>
+        {showUserNameInput && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 flex items-center justify-center bg-white/80 backdrop-blur-lg z-50"
+          >
+            <div className="bg-white w-full max-w-sm p-6 rounded-xl shadow-lg">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">Bienvenue !</h2>
+              <p className="mb-4 text-gray-600">Comment souhaitez-vous être appelé ?</p>
+              
+              <input
+                type="text"
+                className="w-full mb-4 p-3 border border-gray-300 rounded-lg"
+                placeholder="Votre nom"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                autoFocus
+              />
+              
+              <button
+                onClick={() => handleSaveUserName(userName)}
+                className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium"
+              >
+                Continuer
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Détail d'une tâche */}
+      <AnimatePresence>
+        {viewingTask && (
+          <TaskDetail 
+            task={viewingTask} 
+            onClose={() => setViewingTask(null)} 
+            onEdit={() => {
+              setEditingTask(viewingTask);
+              setViewingTask(null);
+            }} 
+          />
+        )}
+      </AnimatePresence>
+      
+      {/* Formulaire d'édition de tâche */}
+      <AnimatePresence>
+        {editingTask && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4"
+          >
+            <TaskForm
+              onSubmit={handleUpdateTask}
+              onCancel={() => setEditingTask(null)}
+              initialTask={editingTask}
+              isEditing
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Formulaire d'ajout de tâche */}
+      <AnimatePresence>
+        {showAddTaskForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4"
+          >
+            <TaskForm
+              onSubmit={handleAddTask}
+              onCancel={() => setShowAddTaskForm(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Mode Focus */}
       <AnimatePresence>
@@ -109,130 +223,57 @@ export default function Home() {
         )}
       </AnimatePresence>
       
-      {/* Formulaire du nom d'utilisateur */}
-      <AnimatePresence>
-        {showUserNameInput && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 flex items-center justify-center bg-white/80 dark:bg-black/80 backdrop-blur-lg z-50"
-          >
-            <div className="ios-card w-full max-w-sm p-6">
-              <h2 className="text-xl font-semibold mb-4 gradient-text">Bienvenue !</h2>
-              <p className="mb-4">Comment souhaitez-vous être appelé ?</p>
-              
-              <input
-                type="text"
-                className="ios-input w-full mb-4"
-                placeholder="Votre nom"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                autoFocus
-              />
-              
-              <button
-                onClick={() => handleSaveUserName(userName)}
-                className="ios-button-primary w-full"
-              >
-                Continuer
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      <div className="max-w-md mx-auto pt-6">
+      <div className="max-w-md mx-auto pt-6 px-4">
         {/* En-tête avec message de bienvenue */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-8"
+          className="mb-4"
         >
-          <h1 className="text-3xl font-bold mb-1 gradient-text">
+          <h1 className="text-2xl font-bold mb-1">
             {getGreeting(userName)}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {getProductivityMessage()}
-          </p>
+          
+          {/* Widget météo */}
+          <div className="inline-block mt-2 mb-4 bg-black/10 rounded-full px-3 py-1 text-sm">
+            {weather ? (
+              <div className="flex items-center">
+                <span>Fribourg</span>
+                <span className="mx-2">•</span>
+                <span>{weather.temperature.toFixed(0)}°</span>
+              </div>
+            ) : (
+              <span>Chargement...</span>
+            )}
+          </div>
         </motion.div>
         
-        {/* Widget météo */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-8"
-        >
-          <WeatherWidget
-            weather={weather}
-            loading={weatherLoading}
-            error={weatherError}
-            onRefresh={refreshWeather}
-          />
-        </motion.div>
+        {/* Séparateur avec date */}
+        <div className="flex items-center my-6">
+          <div className="flex-grow h-px bg-white/20"></div>
+          <div className="px-4 text-sm font-medium">{formatDate(currentDate)}</div>
+          <div className="flex-grow h-px bg-white/20"></div>
+        </div>
         
         {/* Liste des tâches */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mb-6"
         >
-          <div className="flex justify-between items-center mb-5">
-            <h2 className="text-xl font-semibold">Mes tâches</h2>
-            
-            <div className="flex space-x-2">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsFocusMode(true)}
-                className="bg-gradient-to-br from-apple-purple to-apple-indigo text-white p-2 rounded-full shadow-sm"
-                aria-label="Mode focus"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                </svg>
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (!notificationsPermissionGranted) {
-                    requestNotificationsPermission();
-                  }
-                }}
-                className="bg-gradient-to-br from-apple-teal to-apple-blue text-white p-2 rounded-full shadow-sm"
-                aria-label="Activer les notifications"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                </svg>
-              </motion.button>
-            </div>
-          </div>
-          
           {tasksLoading ? (
-            <div className="ios-card p-6 text-center">
+            <div className="text-center py-8">
               <div className="animate-pulse">Chargement...</div>
             </div>
           ) : tasksError ? (
-            <div className="ios-card p-6 text-center text-apple-red">
+            <div className="text-center py-8 text-red-400">
               {tasksError}
             </div>
           ) : tasks.length === 0 ? (
-            <div className="ios-card p-6 glassmorphism flex flex-col items-center justify-center py-12">
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, repeatType: 'loop' }}
-                className="mb-4 text-4xl"
-              >
-                ✨
-              </motion.div>
-              <p className="text-gray-700 dark:text-gray-300 text-center mb-1">Vous n'avez pas encore de tâches</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Profitez de cette journée pour ajouter vos premières tâches</p>
+            <div className="text-center py-8">
+              <p className="text-white/80">Vous n'avez pas encore de tâches</p>
+              <p className="text-sm text-white/60 mt-1">Ajoutez votre première tâche en appuyant sur +</p>
             </div>
           ) : (
             <AnimatePresence>
@@ -246,42 +287,42 @@ export default function Home() {
                     const taskToEdit = tasks.find(t => t.id === id);
                     if (taskToEdit) setEditingTask(taskToEdit);
                   }}
+                  onView={(task) => setViewingTask(task)}
                 />
               ))}
             </AnimatePresence>
           )}
         </motion.div>
-        
-        {/* Formulaire d'ajout/édition de tâche */}
-        <AnimatePresence>
-          {(showAddTaskForm || editingTask) && (
-            <TaskForm
-              onSubmit={editingTask ? handleUpdateTask : handleAddTask}
-              onCancel={() => {
-                setShowAddTaskForm(false);
-                setEditingTask(null);
-              }}
-              initialTask={editingTask || {}}
-              isEditing={!!editingTask}
-            />
-          )}
-        </AnimatePresence>
-        
-        {/* Bouton d'ajout de tâche */}
-        {!showAddTaskForm && !editingTask && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            whileHover={{ scale: 1.05, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowAddTaskForm(true)}
-            className="floating-button bg-gradient-to-br from-apple-blue to-apple-teal"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-          </motion.button>
-        )}
+      </div>
+      
+      {/* Bouton d'ajout de tâche */}
+      <motion.button
+        onClick={() => setShowAddTaskForm(true)}
+        className="fixed bottom-24 right-4 w-14 h-14 bg-white text-blue-500 rounded-full shadow-lg flex items-center justify-center text-3xl"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+      >
+        +
+      </motion.button>
+      
+      {/* Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-blue-400 py-4 flex justify-around">
+        <button className="text-white p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </button>
+        <button className="text-white p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </button>
+        <button className="text-white p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
       </div>
     </main>
   );

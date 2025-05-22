@@ -18,6 +18,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   isEditing = false 
 }) => {
   const [title, setTitle] = useState(initialTask.title || '');
+  const [description, setDescription] = useState(initialTask.description || '');
   const [priority, setPriority] = useState<Task['priority']>(initialTask.priority || 'medium');
   const [dueDate, setDueDate] = useState(initialTask.dueDate || '');
   const [titleError, setTitleError] = useState('');
@@ -56,6 +57,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     onSubmit({
       id: initialTask.id,
       title,
+      description,
       priority,
       dueDate: dueDate || undefined,
     });
@@ -96,6 +98,19 @@ const TaskForm: React.FC<TaskFormProps> = ({
         </div>
         
         <div className="mb-4">
+          <label htmlFor="description" className="block text-sm font-medium mb-1">
+            Description
+          </label>
+          <textarea
+            id="description"
+            className="ios-input w-full min-h-[80px]"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Détails supplémentaires..."
+          />
+        </div>
+        
+        <div className="mb-4">
           <label htmlFor="priority" className="block text-sm font-medium mb-1">
             Priorité
           </label>
@@ -108,10 +123,10 @@ const TaskForm: React.FC<TaskFormProps> = ({
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                   priority === p 
                     ? p === 'high' 
-                      ? 'bg-apple-red text-white' 
+                      ? 'bg-red-500 text-white' 
                       : p === 'medium'
-                        ? 'bg-apple-blue text-white'
-                        : 'bg-apple-green text-white'
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-green-500 text-white'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                 }`}
               >
