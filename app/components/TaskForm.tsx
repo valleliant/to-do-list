@@ -69,7 +69,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       animate="visible"
       exit="exit"
       variants={variants}
-      className="bg-[#1e3a4c] rounded-xl p-6 shadow-lg w-full max-w-md text-white"
+      className="bg-[#1C3B46] rounded-xl p-6 shadow-lg w-full max-w-md text-white"
     >
       <form onSubmit={handleSubmit}>
         <h2 className="text-xl font-semibold mb-6">
@@ -160,7 +160,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           </button>
           <button
             type="submit"
-            className="bg-[#4db6e5] text-white py-2 px-4 rounded-lg font-medium"
+            className="bg-[#4B9BC3] text-white py-2 px-4 rounded-lg font-medium"
           >
             {isEditing ? 'Mettre à jour' : 'Ajouter'}
           </button>

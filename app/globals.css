@@ -13,6 +13,10 @@
   --accent-tertiary: 52, 199, 89;
   --accent-quaternary: 255, 149, 0;
   --accent-quinary: 175, 82, 222;
+  
+  /* Couleurs spécifiques au design */
+  --blue-light: #4B9BC3;
+  --blue-dark: #1C3B46;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,12 +31,30 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: #4db6e5;
+  background: var(--blue-light);
   -webkit-tap-highlight-color: transparent; /* désactive surbrillance au toucher */
   -webkit-touch-callout: none; /* désactive menu contextuel sur iPhone */
-  -webkit-user-select: none; /* désactive sélection texte */
-  overscroll-behavior: none; /* désactive effet de rebond scrolling */
   font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* pour un défilement fluide sur iOS */
+}
+
+/* Pour permettre le défilement sur iOS */
+html {
+  height: 100%;
+  position: relative;
+}
+
+#__next, main {
+  min-height: 100%;
+  position: relative;
+  overflow-y: auto;
+}
+
+/* Pour éviter le pull-to-refresh sur iOS */
+body {
+  overscroll-behavior-y: none;
 }
 
 /* Style iOS pour les éléments */
@@ -107,7 +129,9 @@ body {
 /* Pour faire en sorte que l'app soit toujours en mode standalone */
 @media (display-mode: standalone) {
   body {
-    @apply fixed inset-0 overflow-hidden;
+    /* Ne pas fixer la position en mode standalone pour permettre le défilement */
+    height: 100%;
+    overflow-y: auto;
   }
 }
 

@@ -95,7 +95,7 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       whileTap="tap"
       layout
       onClick={() => onView(task)}
-      className="bg-[#1e3a4c] rounded-xl mb-3 p-4 cursor-pointer"
+      className="bg-[#1C3B46] rounded-xl mb-3 p-4 cursor-pointer"
     >
       <div className="flex items-start">
         <span className="mr-3 text-lg">{priorityData.bullet}</span>

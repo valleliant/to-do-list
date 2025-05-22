@@ -65,7 +65,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onEdit, onDelete
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-[#1e3a4c] text-white z-50 flex flex-col"
+      className="fixed inset-0 bg-[#1C3B46] text-white z-50 flex flex-col"
     >
       {/* Header */}
       <header className="flex items-center p-4">
@@ -86,7 +86,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onEdit, onDelete
       </header>
 
       {/* Contenu */}
-      <div className="p-6 flex-grow flex flex-col">
+      <div className="p-6 flex-grow flex flex-col overflow-y-auto">
         {isEditing ? (
           // Mode édition
           <>
@@ -153,7 +153,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onEdit, onDelete
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 py-3 px-4 rounded-lg bg-[#4db6e5]"
+                className="flex-1 py-3 px-4 rounded-lg bg-[#4B9BC3]"
               >
                 Enregistrer
               </button>
@@ -199,7 +199,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onEdit, onDelete
       </div>
 
       {/* Navigation */}
-      <div className="bg-[#4db6e5] py-4 flex justify-around">
+      <div className="bg-[#4B9BC3] py-4 flex justify-around">
         <button className="text-white p-2 flex flex-col items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

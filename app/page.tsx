@@ -165,7 +165,7 @@ export default function Home() {
   const sortedDateGroups = getSortedDateGroups();
 
   return (
-    <main className="min-h-screen bg-[#4db6e5] text-white">
+    <main className="min-h-screen bg-[#4B9BC3] text-white overflow-y-auto pb-24">
       {/* Formulaire du nom d'utilisateur */}
       <AnimatePresence>
         {showUserNameInput && (
@@ -190,7 +190,7 @@ export default function Home() {
               
               <button
                 onClick={() => handleSaveUserName(userName)}
-                className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium"
+                className="w-full bg-[#4B9BC3] text-white py-3 rounded-lg font-medium"
               >
                 Continuer
               </button>
@@ -240,7 +240,7 @@ export default function Home() {
         )}
       </AnimatePresence>
       
-      <div className="max-w-md mx-auto pt-12 px-4 pb-32">
+      <div className="max-w-md mx-auto pt-12 px-4 pb-32 overflow-y-auto">
         {/* En-tête avec message de bienvenue */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -332,7 +332,7 @@ export default function Home() {
       </motion.button>
       
       {/* Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#4db6e5] py-4 px-4 flex justify-around border-t border-white/20">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#4B9BC3] py-4 px-4 flex justify-around border-t border-white/20">
         <button className="text-white p-2 flex flex-col items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
