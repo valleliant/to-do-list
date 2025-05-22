@@ -1,5 +1,5 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -7,18 +7,20 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Todo List',
   description: 'Application de gestion de tâches quotidiennes',
-  manifest: '/manifest.json',
-  themeColor: '#007AFF',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Todo List',
-  },
+  manifest: '/manifest.webmanifest',
   formatDetection: {
     telephone: false,
   },
 };
+
+export const viewport: Viewport = {
+  themeColor: '#4db6e5',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+}
 
 export default function RootLayout({
   children,
@@ -33,6 +35,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body className={`${inter.className} min-h-screen overflow-hidden`}>
         {children}

@@ -4,6 +4,7 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -82,5 +83,18 @@ module.exports = {
     },
   },
   plugins: [],
+  safelist: [
+    // Ajouter les classes dynamiques que nous utilisons ici pour s'assurer qu'elles sont incluses dans la build
+    'bg-red-500',
+    'bg-orange-500',
+    'bg-green-500',
+    'bg-blue-500',
+    'bg-[#4db6e5]',
+    'bg-[#1e3a4c]',
+    'text-apple-blue',
+    'text-apple-red',
+    'text-apple-green',
+    'text-white'
+  ],
   darkMode: 'media', // basé sur préférence système iOS
 } 

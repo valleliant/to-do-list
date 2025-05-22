@@ -27,11 +27,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgb(var(--background-end-rgb))
-  ) rgb(var(--background-start-rgb));
+  background: #4db6e5;
   -webkit-tap-highlight-color: transparent; /* désactive surbrillance au toucher */
   -webkit-touch-callout: none; /* désactive menu contextuel sur iPhone */
   -webkit-user-select: none; /* désactive sélection texte */
@@ -152,9 +148,9 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-apple-gray/30 rounded-full;
+  @apply bg-gray-400/30 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-apple-gray/50;
+  @apply bg-gray-400/50;
 } 

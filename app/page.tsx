@@ -242,22 +242,12 @@ export default function Home() {
           </h1>
           
           {/* Widget météo */}
-          <div className="inline-block bg-black/20 rounded-full px-4 py-1 text-sm">
-            {weather ? (
-              <div className="flex items-center">
-                <span>Fribourg</span>
-                <span className="mx-2">•</span>
-                <span className="flex items-center">
-                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm0-11.5c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 5.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
-                  </svg>
-                  {weather.temperature.toFixed(0)}°
-                </span>
-              </div>
-            ) : (
-              <span>Chargement...</span>
-            )}
-          </div>
+          <WeatherWidget
+            weather={weather}
+            loading={weatherLoading}
+            error={weatherError}
+            onRefresh={refreshWeather}
+          />
         </motion.div>
         
         {/* Séparateur avec date */}
