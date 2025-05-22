@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#4db6e5',
+  themeColor: '#4B9BC3',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -37,7 +37,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.webmanifest" />
       </head>
-      <body className={`${inter.className} min-h-screen overflow-hidden`}>
+      <body className={`${inter.className} min-h-screen`}>
         {children}
       </body>
     </html>

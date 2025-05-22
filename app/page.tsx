@@ -42,7 +42,8 @@ export default function Home() {
   
   const { 
     permissionGranted: notificationsPermissionGranted,
-    requestPermission: requestNotificationsPermission
+    requestPermission: requestNotificationsPermission,
+    scheduleNotification
   } = useNotifications();
 
   // Format de date pour l'affichage
@@ -82,13 +83,25 @@ export default function Home() {
 
   // Gérer l'ajout d'une tâche
   const handleAddTask = async (taskData: Partial<TaskType>) => {
-    await addTask(
+    const newTask = await addTask(
       taskData.title || '',
       taskData.priority || 'medium',
       taskData.dueDate,
       taskData.description
     );
     setShowAddTaskForm(false);
+    
+    // Envoyer une notification 10 secondes après l'ajout d'une tâche
+    if (newTask) {
+      // Demander la permission pour les notifications si nécessaire
+      if (!notificationsPermissionGranted) {
+        await requestNotificationsPermission();
+      }
+      
+      // Programmer une notification 10 secondes après l'ajout
+      const notificationTime = new Date(Date.now() + 10000); // 10 secondes
+      scheduleNotification(newTask, notificationTime);
+    }
   };
 
   // Gérer la modification d'une tâche
@@ -165,7 +178,7 @@ export default function Home() {
   const sortedDateGroups = getSortedDateGroups();
 
   return (
-    <main className="min-h-screen bg-[#4B9BC3] text-white overflow-y-auto pb-24">
+    <main className="min-h-screen bg-[#4B9BC3] text-white overflow-y-auto pb-24 flex flex-col">
       {/* Formulaire du nom d'utilisateur */}
       <AnimatePresence>
         {showUserNameInput && (

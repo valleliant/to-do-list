@@ -29,9 +29,19 @@
   }
 }
 
+/* Assurer que la couleur de fond s'applique partout, y compris à la barre d'état */
+:root, html, body, #__next {
+  background-color: var(--blue-light);
+}
+
+html {
+  height: 100%;
+  position: relative;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
-  background: var(--blue-light);
+  background-color: var(--blue-light);
   -webkit-tap-highlight-color: transparent; /* désactive surbrillance au toucher */
   -webkit-touch-callout: none; /* désactive menu contextuel sur iPhone */
   font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif;
@@ -40,21 +50,31 @@ body {
   -webkit-overflow-scrolling: touch; /* pour un défilement fluide sur iOS */
 }
 
-/* Pour permettre le défilement sur iOS */
-html {
-  height: 100%;
-  position: relative;
-}
-
 #__next, main {
   min-height: 100%;
   position: relative;
   overflow-y: auto;
+  background-color: var(--blue-light);
 }
 
 /* Pour éviter le pull-to-refresh sur iOS */
 body {
   overscroll-behavior-y: none;
+}
+
+/* Pour la barre d'état iOS */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    :root {
+      --safe-area-inset-top: env(safe-area-inset-top);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom);
+    }
+    
+    body {
+      padding-top: var(--safe-area-inset-top);
+      padding-bottom: var(--safe-area-inset-bottom);
+    }
+  }
 }
 
 /* Style iOS pour les éléments */
