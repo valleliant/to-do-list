@@ -18,7 +18,6 @@ export default function Home() {
   const [userName, setUserName] = useState('Thibaud');
   const [showUserNameInput, setShowUserNameInput] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
-  const [editingTask, setEditingTask] = useState<TaskType | null>(null);
   const [viewingTask, setViewingTask] = useState<TaskType | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -57,7 +56,11 @@ export default function Home() {
 
   // Format simplifié pour les séparateurs
   const formatSimpleDate = (date: Date) => {
-    return `${date.getDate()} mai ${date.getFullYear()}`;
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
   };
 
   // Charger le nom d'utilisateur depuis le stockage local au démarrage
@@ -97,7 +100,6 @@ export default function Home() {
         priority: taskData.priority,
         dueDate: taskData.dueDate,
       });
-      setEditingTask(null);
       setViewingTask(null);
     }
   };
@@ -107,20 +109,17 @@ export default function Home() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
     const taskGroups: Record<string, TaskType[]> = {};
     
     tasks.forEach(task => {
-      let groupDate = '18 mai 2025'; // date par défaut pour l'exemple
+      let groupDate = 'Sans date';
       
       if (task.dueDate) {
         const dueDate = new Date(task.dueDate);
         dueDate.setHours(0, 0, 0, 0);
         
         // Formatter comme "18 mai 2025"
-        groupDate = `${dueDate.getDate()} mai ${dueDate.getFullYear()}`;
+        groupDate = formatSimpleDate(dueDate);
       }
       
       if (!taskGroups[groupDate]) {
@@ -133,7 +132,37 @@ export default function Home() {
     return taskGroups;
   };
 
-  const taskGroups = groupTasksByDate();
+  // Trier les dates des groupes
+  const getSortedDateGroups = () => {
+    const groups = groupTasksByDate();
+    const today = new Date().setHours(0, 0, 0, 0);
+    
+    // Transformer les clés de date en objets Date pour le tri
+    const dateEntries = Object.entries(groups).map(([dateStr, tasks]) => {
+      if (dateStr === 'Sans date') {
+        return { dateStr, date: new Date(8640000000000000), tasks }; // Date max pour "Sans date"
+      }
+      
+      const dateParts = dateStr.split(' ');
+      const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+      const day = parseInt(dateParts[0]);
+      const month = months.indexOf(dateParts[1]);
+      const year = parseInt(dateParts[2]);
+      
+      return { 
+        dateStr, 
+        date: new Date(year, month, day), 
+        tasks 
+      };
+    });
+    
+    // Trier par date (de la plus proche à la plus lointaine)
+    dateEntries.sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    return dateEntries;
+  };
+
+  const sortedDateGroups = getSortedDateGroups();
 
   return (
     <main className="min-h-screen bg-[#4db6e5] text-white">
@@ -176,30 +205,12 @@ export default function Home() {
           <TaskDetail 
             task={viewingTask} 
             onClose={() => setViewingTask(null)} 
-            onEdit={() => {
-              setEditingTask(viewingTask);
+            onEdit={handleUpdateTask}
+            onDelete={(id) => {
+              deleteTask(id);
               setViewingTask(null);
-            }} 
+            }}
           />
-        )}
-      </AnimatePresence>
-      
-      {/* Formulaire d'édition de tâche */}
-      <AnimatePresence>
-        {editingTask && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 p-4"
-          >
-            <TaskForm
-              onSubmit={handleUpdateTask}
-              onCancel={() => setEditingTask(null)}
-              initialTask={editingTask}
-              isEditing
-            />
-          </motion.div>
         )}
       </AnimatePresence>
       
@@ -241,21 +252,24 @@ export default function Home() {
             {getGreeting(userName)}
           </h1>
           
-          {/* Widget météo */}
-          <WeatherWidget
-            weather={weather}
-            loading={weatherLoading}
-            error={weatherError}
-            onRefresh={refreshWeather}
-          />
+          {/* Widget météo simplifié comme dans la maquette */}
+          <div className="inline-block bg-black/20 backdrop-blur-sm rounded-full px-4 py-1 text-sm">
+            {weather ? (
+              <div className="flex items-center">
+                <span>Fribourg</span>
+                <span className="mx-2">•</span>
+                <span className="flex items-center">
+                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm0-11.5c-2.49 0-4.5 2.01-4.5 4.5s2.01 4.5 4.5 4.5 4.5-2.01 4.5-4.5-2.01-4.5-4.5-4.5zm0 5.5c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+                  </svg>
+                  {weather.temperature.toFixed(0)}°
+                </span>
+              </div>
+            ) : (
+              <span>Chargement...</span>
+            )}
+          </div>
         </motion.div>
-        
-        {/* Séparateur avec date */}
-        <div className="flex items-center my-6">
-          <div className="flex-grow h-px bg-white/20"></div>
-          <div className="px-4 text-sm font-medium">18 mai 2025</div>
-          <div className="flex-grow h-px bg-white/20"></div>
-        </div>
         
         {/* Liste des tâches */}
         <motion.div 
@@ -278,24 +292,24 @@ export default function Home() {
             </div>
           ) : (
             <AnimatePresence>
-              {Object.entries(taskGroups).map(([date, groupTasks]) => (
-                <div key={date}>
-                  {date !== '18 mai 2025' && (
-                    <div className="flex items-center my-6">
-                      <div className="flex-grow h-px bg-white/20"></div>
-                      <div className="px-4 text-sm font-medium">{date}</div>
-                      <div className="flex-grow h-px bg-white/20"></div>
-                    </div>
-                  )}
-                  {groupTasks.map(task => (
+              {sortedDateGroups.map(({ dateStr, tasks }) => (
+                <div key={dateStr}>
+                  {/* Séparateur avec date */}
+                  <div className="flex items-center my-6">
+                    <div className="flex-grow h-px bg-white/20"></div>
+                    <div className="px-4 text-sm font-medium">{dateStr}</div>
+                    <div className="flex-grow h-px bg-white/20"></div>
+                  </div>
+                  
+                  {tasks.map(task => (
                     <Task
                       key={task.id}
                       task={task}
                       onToggle={toggleTaskCompletion}
                       onDelete={deleteTask}
                       onEdit={(id) => {
-                        const taskToEdit = tasks.find(t => t.id === id);
-                        if (taskToEdit) setEditingTask(taskToEdit);
+                        const taskToView = tasks.find(t => t.id === id);
+                        if (taskToView) setViewingTask(taskToView);
                       }}
                       onView={(task) => setViewingTask(task)}
                     />
