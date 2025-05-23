@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Task as TaskType } from '../hooks/useTasks';
 
 interface TaskProps {
@@ -14,6 +14,7 @@ interface TaskProps {
 
 const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [dragProgress, setDragProgress] = useState(0);
   const x = useMotionValue(0);
   
   // Transformations pour les indicateurs de glissement
@@ -31,6 +32,16 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
 
   // Rotation légère pour plus de dynamisme
   const rotate = useTransform(x, [-200, 0, 200], [-2, 0, 2]);
+
+  // Écouter les changements de position pour la barre de progression
+  useEffect(() => {
+    const unsubscribe = x.onChange((latest) => {
+      const progress = Math.abs(latest) / 180; // 180 est le seuil
+      setDragProgress(Math.min(progress, 1));
+    });
+    
+    return unsubscribe;
+  }, [x]);
 
   // Styles et couleurs selon la priorité
   const getPriorityData = () => {
@@ -75,6 +86,7 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
   // Gestion du glissement
   const handleDragEnd = (event: any, info: PanInfo) => {
     setIsDragging(false);
+    setDragProgress(0);
     const threshold = 180; // Seuil plus élevé pour aller jusqu'au bout
     
     if (info.offset.x < -threshold) {
@@ -298,7 +310,7 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
               <motion.div
                 className="h-full rounded-full bg-white/60"
                 style={{
-                  width: useTransform(x, [-180, 0, 180], ['100%', '0%', '100%'])
+                  width: dragProgress * 100 + '%'
                 }}
               />
             </div>
