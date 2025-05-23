@@ -1,69 +1,144 @@
 import { useState, useEffect } from 'react';
 import { Task } from './useTasks';
 
-// Détection de l'environnement iOS
-const isIOS = () => {
-  if (typeof window === 'undefined') return false;
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-};
+// Clés VAPID pour les notifications push (à remplacer par vos vraies clés en production)
+const VAPID_PUBLIC_KEY = 'BH7eJ-4uTtRgbgFZPzJI2MNgJe7QJzJ3TGm5TGFBvPYTqTjM9Qx9BnYOe1NnQB7WH5L2mPQwKqGLR2P5JVR-abc';
+
+// Convertir la clé VAPID en Uint8Array
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 export const useNotifications = () => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<PushSubscription | null>(null);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
 
-  // Vérifier la plateforme et les permissions au chargement
-  useEffect(() => {
-    const checkEnvironment = async () => {
-      setIsIOSDevice(isIOS());
-      
-      try {
-        // Sur iOS, les notifications web ne fonctionnent pas, donc nous simulons toujours
-        // un état où les notifications sont "activées" mais utilisons des alternatives
-        if (isIOS()) {
-          console.log('Environnement iOS détecté, utilisation des alertes locales');
-          setPermissionGranted(true);
-          return;
-        }
+  // Vérifier si c'est iOS
+  const checkIsIOS = () => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  };
 
-        // Pour les autres plateformes, vérifier normalement
+  // Initialiser les notifications push
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      setIsIOSDevice(checkIsIOS());
+      
+      // iOS ne supporte pas les notifications push web (pour l'instant)
+      if (checkIsIOS()) {
+        console.log('iOS détecté - notifications push non supportées');
+        setError('Les notifications push ne sont pas supportées sur iOS');
+        return;
+      }
+
+      try {
+        // Vérifier le support des notifications
         if (!('Notification' in window)) {
           setError('Les notifications ne sont pas supportées par ce navigateur');
           return;
         }
 
-        if (Notification.permission === 'granted') {
-          setPermissionGranted(true);
-        } else if (Notification.permission !== 'denied') {
-          const permission = await Notification.requestPermission();
-          setPermissionGranted(permission === 'granted');
+        // Vérifier le support des service workers
+        if (!('serviceWorker' in navigator)) {
+          setError('Les service workers ne sont pas supportés');
+          return;
+        }
+
+        // Vérifier le support des push notifications
+        if (!('PushManager' in window)) {
+          setError('Les notifications push ne sont pas supportées');
+          return;
+        }
+
+        // Enregistrer le service worker
+        const registration = await navigator.serviceWorker.register('/service-worker.js');
+        console.log('Service Worker enregistré:', registration);
+
+        // Vérifier les permissions
+        const permission = await Notification.requestPermission();
+        setPermissionGranted(permission === 'granted');
+
+        if (permission === 'granted') {
+          // Créer ou récupérer la souscription push
+          await createPushSubscription(registration);
         }
       } catch (err) {
-        console.error('Erreur lors de la vérification des notifications:', err);
-        setError('Erreur lors de la vérification des permissions de notification');
+        console.error('Erreur lors de l\'initialisation des notifications:', err);
+        setError('Erreur lors de l\'initialisation des notifications');
       }
     };
 
-    checkEnvironment();
+    initializeNotifications();
   }, []);
 
-  // Demander la permission explicitement
-  const requestPermission = async () => {
+  // Créer une souscription push
+  const createPushSubscription = async (registration: ServiceWorkerRegistration) => {
     try {
-      // Sur iOS, simuler une demande réussie
-      if (isIOSDevice) {
-        console.log('Environnement iOS: permissions simulées');
-        setPermissionGranted(true);
-        return true;
+      // Vérifier si une souscription existe déjà
+      let pushSubscription = await registration.pushManager.getSubscription();
+
+      if (!pushSubscription) {
+        // Créer une nouvelle souscription
+        pushSubscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
       }
 
-      if (!('Notification' in window)) {
-        throw new Error('Les notifications ne sont pas supportées');
+      setSubscription(pushSubscription);
+      
+      // Envoyer la souscription au serveur (vous devrez implémenter cette partie)
+      await sendSubscriptionToServer(pushSubscription);
+      
+      console.log('Souscription push créée:', pushSubscription);
+    } catch (err) {
+      console.error('Erreur lors de la création de la souscription push:', err);
+      setError('Erreur lors de la création de la souscription push');
+    }
+  };
+
+  // Envoyer la souscription au serveur
+  const sendSubscriptionToServer = async (subscription: PushSubscription) => {
+    try {
+      // Ici vous devriez envoyer la souscription à votre backend
+      // Pour l'instant, on la stocke dans le localStorage comme exemple
+      localStorage.setItem('pushSubscription', JSON.stringify(subscription));
+      console.log('Souscription sauvegardée localement');
+    } catch (err) {
+      console.error('Erreur lors de l\'envoi de la souscription:', err);
+    }
+  };
+
+  // Demander la permission pour les notifications
+  const requestPermission = async () => {
+    try {
+      if (isIOSDevice) {
+        setError('Les notifications push ne sont pas supportées sur iOS');
+        return false;
       }
 
       const permission = await Notification.requestPermission();
       setPermissionGranted(permission === 'granted');
+
+      if (permission === 'granted' && 'serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        await createPushSubscription(registration);
+      }
+
       return permission === 'granted';
     } catch (err) {
       console.error('Erreur de permission:', err);
@@ -72,117 +147,89 @@ export const useNotifications = () => {
     }
   };
 
-  // Solution alternative pour iOS: alert dans l'app
-  const showIOSNotification = (title: string, body: string) => {
-    // Sur iOS, nous utilisons une alerte visuelle dans l'application
-    // Cette fonction sera appelée seulement si l'app est au premier plan
-    console.log('Affichage notification iOS simulée:', title, body);
-    
-    // Créer un élément visuel qui ressemble à une notification iOS
-    const notifElement = document.createElement('div');
-    notifElement.style.position = 'fixed';
-    notifElement.style.top = '10px';
-    notifElement.style.left = '50%';
-    notifElement.style.transform = 'translateX(-50%)';
-    notifElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-    notifElement.style.color = 'white';
-    notifElement.style.padding = '12px 16px';
-    notifElement.style.borderRadius = '12px';
-    notifElement.style.zIndex = '9999';
-    notifElement.style.maxWidth = '90%';
-    notifElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-    notifElement.style.display = 'flex';
-    notifElement.style.flexDirection = 'column';
-
-    const titleEl = document.createElement('div');
-    titleEl.style.fontWeight = 'bold';
-    titleEl.style.marginBottom = '4px';
-    titleEl.textContent = title;
-
-    const bodyEl = document.createElement('div');
-    bodyEl.style.fontSize = '14px';
-    bodyEl.style.opacity = '0.9';
-    bodyEl.textContent = body;
-
-    notifElement.appendChild(titleEl);
-    notifElement.appendChild(bodyEl);
-    document.body.appendChild(notifElement);
-
-    // Animation d'entrée
-    notifElement.style.transition = 'all 0.3s ease-out';
-    notifElement.style.opacity = '0';
-    notifElement.style.transform = 'translateX(-50%) translateY(-20px)';
-    
-    setTimeout(() => {
-      notifElement.style.opacity = '1';
-      notifElement.style.transform = 'translateX(-50%) translateY(0)';
-    }, 10);
-
-    // Disparaître après 4 secondes
-    setTimeout(() => {
-      notifElement.style.opacity = '0';
-      notifElement.style.transform = 'translateX(-50%) translateY(-20px)';
-      
-      // Supprimer l'élément après la fin de l'animation
-      setTimeout(() => {
-        document.body.removeChild(notifElement);
-      }, 300);
-    }, 4000);
-  };
-
-  // Programmer une notification pour une tâche
+  // Programmer une notification push pour une tâche
   const scheduleNotification = async (task: Task, notificationTime: Date) => {
     try {
-      const timeUntilNotification = notificationTime.getTime() - Date.now();
-      if (timeUntilNotification <= 0) return false;
-
-      // Solution alternative pour iOS
       if (isIOSDevice) {
-        console.log(`Programmation notification iOS dans ${timeUntilNotification}ms pour: ${task.title}`);
-        setTimeout(() => {
-          showIOSNotification('Nouvelle tâche ajoutée', task.title);
-        }, timeUntilNotification);
-        return true;
+        setError('Les notifications push ne sont pas supportées sur iOS');
+        return false;
       }
 
-      // Pour les autres plateformes, demander la permission si nécessaire
+      if (!permissionGranted || !subscription) {
+        const granted = await requestPermission();
+        if (!granted) return false;
+      }
+
+      const timeUntilNotification = notificationTime.getTime() - Date.now();
+      if (timeUntilNotification <= 0) {
+        console.log('L\'heure de notification est déjà passée');
+        return false;
+      }
+
+      // Programmer la notification
+      // En production, vous devriez envoyer ceci à votre backend qui programmera l'envoi
+      const notificationData = {
+        taskId: task.id,
+        title: 'Rappel de tâche',
+        body: task.title,
+        scheduledTime: notificationTime.toISOString(),
+        url: window.location.origin
+      };
+
+      // Pour l'instant, simuler l'envoi immédiat après le délai
+      setTimeout(async () => {
+        await sendImmediatePushNotification(notificationData);
+      }, timeUntilNotification);
+
+      console.log(`Notification programmée pour ${task.title} dans ${timeUntilNotification}ms`);
+      return true;
+    } catch (err) {
+      console.error('Erreur lors de la programmation de la notification:', err);
+      setError('Erreur lors de la programmation de la notification');
+      return false;
+    }
+  };
+
+  // Envoyer une notification push immédiate (simulation)
+  const sendImmediatePushNotification = async (data: any) => {
+    try {
+      // En production, cette fonction devrait appeler votre backend
+      // qui enverra la notification push via FCM ou un autre service
+      
+      // Pour l'instant, on utilise l'API de notification locale comme fallback
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        
+        // Déclencher l'événement push manuellement (simulation)
+        if (registration.active) {
+          registration.active.postMessage({
+            type: 'SIMULATE_PUSH',
+            data: data
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Erreur lors de l\'envoi de la notification:', err);
+    }
+  };
+
+  // Envoyer une notification de test
+  const sendTestNotification = async () => {
+    try {
       if (!permissionGranted) {
         const granted = await requestPermission();
         if (!granted) return false;
       }
 
-      // Utiliser les notifications web standards si disponibles
-      if ('serviceWorker' in navigator && 'PushManager' in window) {
-        const registration = await navigator.serviceWorker.ready;
-        
-        setTimeout(() => {
-          registration.showNotification('Nouvelle tâche ajoutée', {
-            body: task.title,
-            icon: '/icons/icon-192x192.png',
-            badge: '/icons/badge-96x96.png',
-            tag: `task-${task.id}`,
-            data: {
-              taskId: task.id,
-              url: window.location.origin
-            }
-          });
-        }, timeUntilNotification);
+      await sendImmediatePushNotification({
+        title: 'Notification de test',
+        body: 'Ceci est une notification push de test !',
+        url: window.location.origin
+      });
 
-        return true;
-      } else {
-        // Fallback pour les navigateurs qui ne supportent pas les service workers
-        setTimeout(() => {
-          new Notification('Nouvelle tâche ajoutée', {
-            body: task.title,
-            icon: '/icons/icon-192x192.png',
-          });
-        }, timeUntilNotification);
-        
-        return true;
-      }
+      return true;
     } catch (err) {
-      console.error('Erreur de notification:', err);
-      setError('Erreur lors de la programmation de la notification');
+      console.error('Erreur lors de l\'envoi de la notification de test:', err);
       return false;
     }
   };
@@ -190,8 +237,10 @@ export const useNotifications = () => {
   return {
     permissionGranted,
     error,
+    subscription,
+    isIOSDevice,
     requestPermission,
     scheduleNotification,
-    isIOSDevice
+    sendTestNotification
   };
 }; 

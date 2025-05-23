@@ -80,6 +80,28 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// Gérer les messages du client principal
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SIMULATE_PUSH') {
+    // Simuler une notification push
+    const data = event.data.data;
+    
+    const options = {
+      body: data.body || 'Nouvelle notification',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/badge-96x96.png',
+      tag: data.taskId ? `task-${data.taskId}` : 'notification',
+      requireInteraction: true,
+      data: {
+        url: data.url || self.location.origin,
+        taskId: data.taskId
+      }
+    };
+    
+    self.registration.showNotification(data.title || 'Todo List', options);
+  }
+});
+
 // Gérer les notifications push
 self.addEventListener('push', (event) => {
   if (!event.data) return;
@@ -90,10 +112,11 @@ self.addEventListener('push', (event) => {
     body: data.body || 'Nouvelle notification',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/badge-96x96.png',
-    // La propriété vibrate est supportée par les navigateurs mais pas dans les types TypeScript
-    // vibrate: [200, 100, 200],
+    tag: data.taskId ? `task-${data.taskId}` : 'notification',
+    requireInteraction: true,
     data: {
-      url: data.url || self.location.origin
+      url: data.url || self.location.origin,
+      taskId: data.taskId
     }
   };
   

@@ -12,6 +12,7 @@ import TaskDetail from './components/TaskDetail';
 import TaskForm from './components/TaskForm';
 import WeatherWidget from './components/WeatherWidget';
 import FocusMode from './components/FocusMode';
+import NotificationTest from './components/NotificationTest';
 
 export default function Home() {
   // États locaux
@@ -282,6 +283,16 @@ export default function Home() {
               <span>Chargement...</span>
             )}
           </div>
+        </motion.div>
+        
+        {/* Test des notifications push */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-6"
+        >
+          <NotificationTest />
         </motion.div>
         
         {/* Liste des tâches */}
