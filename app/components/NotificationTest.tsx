@@ -19,11 +19,78 @@ export default function NotificationTest() {
   };
 
   const handleSendTest = async () => {
-    const success = await sendTestNotification();
-    if (success) {
-      alert('Notification de test envoyée ! Vous devriez la voir apparaître même si vous fermez l\'onglet.');
-    } else {
+    console.log('--- DÉBUT DU TEST DE NOTIFICATION ---');
+    console.log('État actuel:', { 
+      permissionGranted, 
+      canUseNotifications, 
+      isIOSDevice, 
+      isStandalone,
+      subscription: !!subscription 
+    });
+    
+    // Vérifier les permissions avant l'envoi
+    console.log('Permission Notification:', Notification.permission);
+    
+    try {
+      const success = await sendTestNotification();
+      console.log('Résultat sendTestNotification:', success);
+      
+      if (success) {
+        if (isIOSDevice) {
+          alert('Notification de test envoyée ! Sur iOS, elle devrait apparaître immédiatement. Si vous ne la voyez pas, vérifiez les paramètres de notification de votre iPhone dans Réglages > Notifications.');
+        } else {
+          alert('Notification de test envoyée ! Vous devriez la voir apparaître même si vous fermez l\'onglet.');
+        }
+      } else {
+        console.error('Échec de l\'envoi de la notification');
+        alert('Erreur lors de l\'envoi de la notification de test. Vérifiez la console pour plus de détails.');
+      }
+    } catch (error) {
+      console.error('Erreur dans handleSendTest:', error);
       alert('Erreur lors de l\'envoi de la notification de test.');
+    }
+    
+    console.log('--- FIN DU TEST DE NOTIFICATION ---');
+  };
+
+  // Test de diagnostic spécial pour iOS
+  const handleIOSDiagnostic = async () => {
+    console.log('--- DIAGNOSTIC iOS NOTIFICATION ---');
+    
+    try {
+      // Test 1: Notification directe simple
+      console.log('Test 1: Notification directe simple');
+      const notif1 = new Notification('Test Direct', {
+        body: 'Notification directe iOS - Test 1',
+        icon: '/icons/icon-192x192.png'
+      });
+      
+      setTimeout(() => {
+        notif1.close();
+      }, 5000);
+      
+      // Test 2: Avec toutes les options
+      setTimeout(() => {
+        console.log('Test 2: Notification avec options complètes');
+        const notif2 = new Notification('Test Complet', {
+          body: 'Notification avec toutes les options - Test 2',
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/badge-96x96.png',
+          tag: 'test-diagnostic',
+          requireInteraction: false,
+          silent: false
+        });
+        
+        setTimeout(() => {
+          notif2.close();
+        }, 5000);
+      }, 2000);
+      
+      alert('Tests de diagnostic lancés ! Regardez votre écran pour voir les notifications. Vérifiez aussi la console.');
+      
+    } catch (error) {
+      console.error('Erreur dans le diagnostic iOS:', error);
+      alert(`Erreur de diagnostic: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   };
 
@@ -160,6 +227,15 @@ export default function NotificationTest() {
               Envoyer une notification de test
             </button>
           )}
+          
+          {permissionGranted && canUseNotifications && isIOSDevice && (
+            <button
+              onClick={handleIOSDiagnostic}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded font-medium transition-colors text-sm"
+            >
+              Diagnostic iOS
+            </button>
+          )}
         </div>
 
         {canUseNotifications && (
@@ -171,6 +247,23 @@ export default function NotificationTest() {
               <li>3. Cliquez sur "Envoyer une notification de test"</li>
               <li>4. {isIOSDevice ? 'Appuyez sur le bouton home ou fermez l\'app' : 'Fermez ou réduisez votre navigateur'} pour voir la notification système</li>
             </ol>
+          </div>
+        )}
+
+        {canUseNotifications && isIOSDevice && (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+            <h4 className="font-medium text-yellow-800 mb-2">🔧 Dépannage iOS :</h4>
+            <div className="text-sm text-yellow-700 space-y-2">
+              <p><strong>Si vous ne voyez pas les notifications :</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Vérifiez <strong>Réglages → Notifications → Todo List</strong></li>
+                <li>Assurez-vous que "Autoriser les notifications" est activé</li>
+                <li>Vérifiez que "Sons" et "Pastilles" sont activés</li>
+                <li>Essayez le bouton "Diagnostic iOS" pour des tests détaillés</li>
+                <li>Redémarrez l'app depuis l'écran d'accueil</li>
+              </ul>
+              <p className="mt-2"><strong>Note :</strong> Sur iOS, les notifications peuvent prendre quelques secondes à apparaître.</p>
+            </div>
           </div>
         )}
       </div>

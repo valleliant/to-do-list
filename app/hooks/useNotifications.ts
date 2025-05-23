@@ -262,23 +262,62 @@ export const useNotifications = () => {
   // Envoyer une notification push immédiate
   const sendImmediatePushNotification = async (data: any) => {
     try {
+      console.log('Envoi de notification:', { isIOSDevice, data });
+      
       if (isIOSDevice) {
-        // Pour iOS, utiliser l'API Notification directement
-        console.log('iOS: Envoi de notification locale');
+        // Pour iOS, essayer plusieurs approches
+        console.log('iOS: Tentative de notification locale directe');
         
+        try {
+          // Approche 1: Notification directe (plus fiable sur iOS)
+          const notification = new Notification(data.title || 'Todo List', {
+            body: data.body || 'Nouvelle notification',
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/badge-96x96.png',
+            tag: data.taskId ? `task-${data.taskId}` : 'notification',
+            requireInteraction: true,
+            data: {
+              url: data.url || window.location.origin,
+              taskId: data.taskId
+            }
+          });
+          
+          console.log('iOS: Notification directe créée avec succès');
+          
+          // Gérer le clic sur la notification
+          notification.onclick = function(event) {
+            console.log('Notification cliquée');
+            event.preventDefault();
+            if (data.url) {
+              window.focus();
+              // Pour iOS, juste mettre le focus sur la fenêtre
+            }
+            notification.close();
+          };
+          
+          return;
+        } catch (directError) {
+          console.error('iOS: Échec de la notification directe:', directError);
+        }
+        
+        // Approche 2: Via service worker en fallback
         if ('serviceWorker' in navigator) {
+          console.log('iOS: Tentative via service worker');
           const registration = await navigator.serviceWorker.ready;
           
-          // Déclencher une notification via le service worker
           if (registration.active) {
             registration.active.postMessage({
               type: 'SIMULATE_PUSH',
               data: data
             });
+            console.log('iOS: Message envoyé au service worker');
+          } else {
+            console.error('iOS: Service worker non actif');
           }
         }
       } else {
-        // Pour les autres plateformes, utiliser le système de push
+        // Pour les autres plateformes, utiliser le service worker
+        console.log('Non-iOS: Utilisation du service worker');
         if ('serviceWorker' in navigator) {
           const registration = await navigator.serviceWorker.ready;
           
@@ -287,6 +326,9 @@ export const useNotifications = () => {
               type: 'SIMULATE_PUSH',
               data: data
             });
+            console.log('Non-iOS: Message envoyé au service worker');
+          } else {
+            console.error('Non-iOS: Service worker non actif');
           }
         }
       }
