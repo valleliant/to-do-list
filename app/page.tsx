@@ -13,6 +13,8 @@ import TaskForm from './components/TaskForm';
 import WeatherWidget from './components/WeatherWidget';
 import FocusMode from './components/FocusMode';
 import NotificationStatus from './components/NotificationStatus';
+import CompletedTasksMenu from './components/CompletedTasksMenu';
+import SwipeHint from './components/SwipeHint';
 
 export default function Home() {
   // États locaux
@@ -21,6 +23,8 @@ export default function Home() {
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [viewingTask, setViewingTask] = useState<TaskType | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Hooks personnalisés
@@ -50,12 +54,24 @@ export default function Home() {
     sendNotification
   } = useNotifications();
 
+  // Filtrer les tâches actives et terminées
+  const activeTasks = tasks.filter(task => !task.completed);
+  const completedTasks = tasks.filter(task => task.completed);
+
   // Synchroniser les notifications avec les tâches
   useEffect(() => {
     if (permissionGranted && tasks.length > 0) {
       updateTaskNotifications(tasks);
     }
   }, [tasks, permissionGranted, updateTaskNotifications]);
+
+  // Vérifier si on doit afficher l'aide au glissement
+  useEffect(() => {
+    const hasSeenSwipeHint = localStorage.getItem('hasSeenSwipeHint');
+    if (!hasSeenSwipeHint && activeTasks.length > 0) {
+      setShowSwipeHint(true);
+    }
+  }, [activeTasks.length]);
 
   // Format de date pour l'affichage
   const formatDate = (date: Date) => {
@@ -167,14 +183,25 @@ export default function Home() {
     await toggleTaskCompletion(id);
   };
 
-  // Grouper les tâches par date
+  // Gérer la restauration d'une tâche terminée
+  const handleRestoreTask = async (id: string) => {
+    await toggleTaskCompletion(id);
+    
+    // Reprogrammer les rappels si la tâche a une date d'échéance
+    const restoredTask = tasks.find(t => t.id === id);
+    if (restoredTask && restoredTask.dueDate) {
+      await scheduleTaskReminders(restoredTask);
+    }
+  };
+
+  // Grouper les tâches actives par date
   const groupTasksByDate = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     const taskGroups: Record<string, TaskType[]> = {};
     
-    tasks.forEach(task => {
+    activeTasks.forEach(task => {
       let groupDate = 'Sans date';
       
       if (task.dueDate) {
@@ -227,6 +254,12 @@ export default function Home() {
 
   const sortedDateGroups = getSortedDateGroups();
 
+  // Gérer la fermeture de l'aide au glissement
+  const handleDismissSwipeHint = () => {
+    setShowSwipeHint(false);
+    localStorage.setItem('hasSeenSwipeHint', 'true');
+  };
+
   return (
     <main className="min-h-screen bg-[#4B9BC3] text-white overflow-y-auto pb-24 flex flex-col">
       {/* Formulaire du nom d'utilisateur */}
@@ -261,6 +294,15 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Menu des tâches terminées */}
+      <CompletedTasksMenu
+        isOpen={showCompletedTasks}
+        onClose={() => setShowCompletedTasks(false)}
+        completedTasks={completedTasks}
+        onRestoreTask={handleRestoreTask}
+        onDeleteTask={handleDeleteTask}
+      />
       
       {/* Détail d'une tâche */}
       <AnimatePresence>
@@ -303,6 +345,16 @@ export default function Home() {
         )}
       </AnimatePresence>
       
+      {/* Aide au glissement */}
+      <AnimatePresence>
+        {showSwipeHint && (
+          <SwipeHint
+            isVisible={showSwipeHint}
+            onDismiss={handleDismissSwipeHint}
+          />
+        )}
+      </AnimatePresence>
+      
       <div className="max-w-md mx-auto pt-12 px-4 pb-32 overflow-y-auto">
         {/* En-tête avec message de bienvenue */}
         <motion.div 
@@ -311,9 +363,24 @@ export default function Home() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mb-6"
         >
-          <h1 className="text-2xl font-bold mb-3">
-            {getGreeting(userName)}
-          </h1>
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-2xl font-bold">
+              {getGreeting(userName)}
+            </h1>
+            
+            {/* Bouton pour les tâches terminées */}
+            {completedTasks.length > 0 && (
+              <motion.button
+                onClick={() => setShowCompletedTasks(true)}
+                className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-sm flex items-center space-x-2"
+                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.3)' }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <span>✅</span>
+                <span>{completedTasks.length}</span>
+              </motion.button>
+            )}
+          </div>
           
           {/* Widget météo simplifié comme dans la maquette */}
           <div className="inline-block bg-black/20 backdrop-blur-sm rounded-full px-4 py-1 text-sm">
@@ -343,7 +410,7 @@ export default function Home() {
           <NotificationStatus />
         </motion.div>
         
-        {/* Liste des tâches */}
+        {/* Liste des tâches actives */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -357,7 +424,7 @@ export default function Home() {
             <div className="text-center py-8 text-red-400">
               {tasksError}
             </div>
-          ) : tasks.length === 0 ? (
+          ) : activeTasks.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-white/80">Vous n'avez pas encore de tâches</p>
               <p className="text-sm text-white/60 mt-1">Ajoutez votre première tâche en appuyant sur +</p>
