@@ -13,6 +13,7 @@ import TaskForm from './components/TaskForm';
 import WeatherWidget from './components/WeatherWidget';
 import FocusMode from './components/FocusMode';
 import NotificationTest from './components/NotificationTest';
+import InstallPrompt from './components/InstallPrompt';
 
 export default function Home() {
   // États locaux
@@ -283,6 +284,16 @@ export default function Home() {
               <span>Chargement...</span>
             )}
           </div>
+        </motion.div>
+        
+        {/* Prompt d'installation PWA */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="mb-6"
+        >
+          <InstallPrompt />
         </motion.div>
         
         {/* Test des notifications push */}

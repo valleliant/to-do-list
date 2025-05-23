@@ -25,6 +25,8 @@ export const useNotifications = () => {
   const [error, setError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [canUseNotifications, setCanUseNotifications] = useState(false);
 
   // Vérifier si c'est iOS
   const checkIsIOS = () => {
@@ -33,15 +35,39 @@ export const useNotifications = () => {
            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   };
 
+  // Vérifier si l'app est en mode standalone (installée)
+  const checkIsStandalone = () => {
+    if (typeof window === 'undefined') return false;
+    
+    // Méthode principale pour détecter le mode standalone
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+    
+    // Fallback pour iOS Safari
+    const isIOSStandalone = (window.navigator as any).standalone === true;
+    
+    // Vérifier si l'app a été lancée depuis l'écran d'accueil
+    const hasStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches ||
+                                window.matchMedia('(display-mode: fullscreen)').matches ||
+                                window.matchMedia('(display-mode: minimal-ui)').matches;
+    
+    return isStandaloneMode || isIOSStandalone || hasStandaloneDisplay;
+  };
+
   // Initialiser les notifications push
   useEffect(() => {
     const initializeNotifications = async () => {
-      setIsIOSDevice(checkIsIOS());
+      const isIOS = checkIsIOS();
+      const isStandaloneApp = checkIsStandalone();
       
-      // iOS ne supporte pas les notifications push web (pour l'instant)
-      if (checkIsIOS()) {
-        console.log('iOS détecté - notifications push non supportées');
-        setError('Les notifications push ne sont pas supportées sur iOS');
+      setIsIOSDevice(isIOS);
+      setIsStandalone(isStandaloneApp);
+      
+      console.log('Environnement détecté:', { isIOS, isStandaloneApp });
+      
+      // Sur iOS, les notifications ne fonctionnent que si l'app est installée
+      if (isIOS && !isStandaloneApp) {
+        setCanUseNotifications(false);
+        setError('Pour recevoir des notifications sur iOS, veuillez installer l\'application sur votre écran d\'accueil');
         return;
       }
 
@@ -64,17 +90,18 @@ export const useNotifications = () => {
           return;
         }
 
+        setCanUseNotifications(true);
+
         // Enregistrer le service worker
         const registration = await navigator.serviceWorker.register('/service-worker.js');
         console.log('Service Worker enregistré:', registration);
 
-        // Vérifier les permissions
-        const permission = await Notification.requestPermission();
-        setPermissionGranted(permission === 'granted');
-
-        if (permission === 'granted') {
-          // Créer ou récupérer la souscription push
+        // Vérifier les permissions existantes
+        if (Notification.permission === 'granted') {
+          setPermissionGranted(true);
           await createPushSubscription(registration);
+        } else if (Notification.permission === 'denied') {
+          setError('Les notifications ont été refusées. Veuillez les autoriser dans les paramètres de votre navigateur.');
         }
       } catch (err) {
         console.error('Erreur lors de l\'initialisation des notifications:', err);
@@ -126,8 +153,12 @@ export const useNotifications = () => {
   // Demander la permission pour les notifications
   const requestPermission = async () => {
     try {
-      if (isIOSDevice) {
-        setError('Les notifications push ne sont pas supportées sur iOS');
+      if (!canUseNotifications) {
+        if (isIOSDevice && !isStandalone) {
+          setError('Pour recevoir des notifications sur iOS, veuillez installer l\'application sur votre écran d\'accueil');
+        } else {
+          setError('Les notifications push ne sont pas supportées sur cet appareil');
+        }
         return false;
       }
 
@@ -137,6 +168,9 @@ export const useNotifications = () => {
       if (permission === 'granted' && 'serviceWorker' in navigator) {
         const registration = await navigator.serviceWorker.ready;
         await createPushSubscription(registration);
+        setError(null); // Effacer les erreurs précédentes
+      } else if (permission === 'denied') {
+        setError('Permission refusée. Veuillez autoriser les notifications dans les paramètres.');
       }
 
       return permission === 'granted';
@@ -150,8 +184,8 @@ export const useNotifications = () => {
   // Programmer une notification push pour une tâche
   const scheduleNotification = async (task: Task, notificationTime: Date) => {
     try {
-      if (isIOSDevice) {
-        setError('Les notifications push ne sont pas supportées sur iOS');
+      if (!canUseNotifications) {
+        console.log('Notifications non disponibles sur cet appareil/configuration');
         return false;
       }
 
@@ -216,6 +250,10 @@ export const useNotifications = () => {
   // Envoyer une notification de test
   const sendTestNotification = async () => {
     try {
+      if (!canUseNotifications) {
+        return false;
+      }
+
       if (!permissionGranted) {
         const granted = await requestPermission();
         if (!granted) return false;
@@ -223,7 +261,7 @@ export const useNotifications = () => {
 
       await sendImmediatePushNotification({
         title: 'Notification de test',
-        body: 'Ceci est une notification push de test !',
+        body: isIOSDevice ? 'Notifications push iOS fonctionnelles ! 🎉' : 'Ceci est une notification push de test !',
         url: window.location.origin
       });
 
@@ -239,6 +277,8 @@ export const useNotifications = () => {
     error,
     subscription,
     isIOSDevice,
+    isStandalone,
+    canUseNotifications,
     requestPermission,
     scheduleNotification,
     sendTestNotification
