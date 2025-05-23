@@ -17,26 +17,30 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
   const [dragProgress, setDragProgress] = useState(0);
   const x = useMotionValue(0);
   
-  // Transformations pour les indicateurs de glissement
-  const leftOpacity = useTransform(x, [-200, -100, 0], [1, 0.7, 0]);
-  const rightOpacity = useTransform(x, [0, 100, 200], [0, 0.7, 1]);
-  const leftScale = useTransform(x, [-200, -100, 0], [1.3, 1.1, 0.8]);
-  const rightScale = useTransform(x, [0, 100, 200], [0.8, 1.1, 1.3]);
+  // Seuils optimisés pour mobile
+  const SWIPE_THRESHOLD = 80; // Réduit de 180 à 80 pour mobile
+  const MAX_DRAG = 120; // Distance maximale de glissement
   
-  // Couleur de fond selon la direction - plus progressive
+  // Transformations pour les indicateurs de glissement - plus réactives
+  const leftOpacity = useTransform(x, [-MAX_DRAG, -40, 0], [1, 0.8, 0]);
+  const rightOpacity = useTransform(x, [0, 40, MAX_DRAG], [0, 0.8, 1]);
+  const leftScale = useTransform(x, [-MAX_DRAG, -40, 0], [1.2, 1.05, 0.9]);
+  const rightScale = useTransform(x, [0, 40, MAX_DRAG], [0.9, 1.05, 1.2]);
+  
+  // Couleur de fond selon la direction - transitions plus rapides
   const backgroundColor = useTransform(
     x,
-    [-200, -100, -50, 0, 50, 100, 200],
+    [-MAX_DRAG, -60, -30, 0, 30, 60, MAX_DRAG],
     ['#10B981', '#10B981', '#1C3B46', '#1C3B46', '#1C3B46', '#EF4444', '#EF4444']
   );
 
-  // Rotation légère pour plus de dynamisme
-  const rotate = useTransform(x, [-200, 0, 200], [-2, 0, 2]);
+  // Rotation plus subtile pour mobile
+  const rotate = useTransform(x, [-MAX_DRAG, 0, MAX_DRAG], [-1, 0, 1]);
 
   // Écouter les changements de position pour la barre de progression
   useEffect(() => {
     const unsubscribe = x.onChange((latest) => {
-      const progress = Math.abs(latest) / 180; // 180 est le seuil
+      const progress = Math.abs(latest) / SWIPE_THRESHOLD;
       setDragProgress(Math.min(progress, 1));
     });
     
@@ -83,26 +87,32 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
 
   const priorityData = getPriorityData();
 
-  // Gestion du glissement
+  // Gestion du glissement optimisée pour mobile
   const handleDragEnd = (event: any, info: PanInfo) => {
     setIsDragging(false);
     setDragProgress(0);
-    const threshold = 180; // Seuil plus élevé pour aller jusqu'au bout
     
-    if (info.offset.x < -threshold) {
+    // Utilisation de la vélocité pour une meilleure réactivité mobile
+    const velocity = info.velocity.x;
+    const offset = info.offset.x;
+    
+    // Si la vélocité est élevée, on peut déclencher avec un seuil plus bas
+    const velocityThreshold = 500; // pixels/seconde
+    const isHighVelocity = Math.abs(velocity) > velocityThreshold;
+    const dynamicThreshold = isHighVelocity ? SWIPE_THRESHOLD * 0.6 : SWIPE_THRESHOLD;
+    
+    if (offset < -dynamicThreshold || (velocity < -velocityThreshold && offset < -30)) {
       // Glissement vers la gauche - marquer comme terminé
-      // Animation de sortie vers la gauche
-      x.set(-300);
-      setTimeout(() => {
-        onToggle(task.id);
-      }, 200);
-    } else if (info.offset.x > threshold) {
+      onToggle(task.id);
+      // Animation de confirmation rapide
+      x.set(-200);
+      setTimeout(() => x.set(0), 150);
+    } else if (offset > dynamicThreshold || (velocity > velocityThreshold && offset > 30)) {
       // Glissement vers la droite - supprimer
-      // Animation de sortie vers la droite
-      x.set(300);
-      setTimeout(() => {
-        onDelete(task.id);
-      }, 200);
+      onDelete(task.id);
+      // Animation de confirmation rapide
+      x.set(200);
+      setTimeout(() => x.set(0), 150);
     } else {
       // Retour automatique au centre avec animation fluide
       x.set(0);
@@ -113,7 +123,7 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
     setIsDragging(true);
   };
 
-  // Animation variants
+  // Animation variants optimisées
   const variants = {
     initial: { opacity: 0, y: 20, scale: 0.95 },
     animate: { 
@@ -122,8 +132,8 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       scale: 1, 
       transition: { 
         type: 'spring', 
-        stiffness: 400, 
-        damping: 30 
+        stiffness: 500, 
+        damping: 35 
       } 
     },
     exit: { 
@@ -131,21 +141,14 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       scale: 0.8,
       y: -20,
       transition: { 
-        duration: 0.3,
+        duration: 0.25,
         ease: "easeInOut"
       } 
     },
     completed: {
       scale: [1, 1.05, 1],
       transition: {
-        duration: 0.6,
-        ease: "easeInOut"
-      }
-    },
-    deleted: {
-      x: [0, 10, -10, 0],
-      transition: {
-        duration: 0.3,
+        duration: 0.4,
         ease: "easeInOut"
       }
     }
@@ -213,22 +216,23 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
           rotate: isDragging ? rotate : 0
         }}
         drag="x"
-        dragConstraints={{ left: -250, right: 250 }}
-        dragElastic={0.1}
+        dragConstraints={{ left: -MAX_DRAG, right: MAX_DRAG }}
+        dragElastic={0.05}
+        dragMomentum={false}
         dragTransition={{ 
-          bounceStiffness: 600, 
-          bounceDamping: 20,
-          power: 0.3,
-          timeConstant: 200
+          bounceStiffness: 800, 
+          bounceDamping: 40,
+          power: 0.2,
+          timeConstant: 150
         }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onClick={() => !isDragging && onView(task)}
-        className={`relative rounded-xl p-4 cursor-pointer transition-all duration-200 ${
+        className={`relative rounded-xl p-4 cursor-pointer transition-all duration-150 ${
           task.completed ? 'opacity-75' : ''
         }`}
-        whileHover={!isDragging ? { y: -2, boxShadow: '0 8px 25px rgba(0,0,0,0.15)' } : {}}
-        whileTap={!isDragging ? { scale: 0.98 } : {}}
+        whileHover={!isDragging ? { y: -1, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' } : {}}
+        whileTap={!isDragging ? { scale: 0.99 } : {}}
       >
         <div className="flex items-start">
           <motion.span 
