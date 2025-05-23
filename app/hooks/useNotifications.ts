@@ -161,7 +161,6 @@ export const useNotifications = () => {
             icon: '/icons/icon-192x192.png',
             badge: '/icons/badge-96x96.png',
             tag: `task-${task.id}`,
-            vibrate: [200, 100, 200],
             data: {
               taskId: task.id,
               url: window.location.origin
