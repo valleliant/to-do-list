@@ -1,8 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Task } from './useTasks';
 
-// Clés VAPID pour les notifications push - vraie clé générée
+// Clés VAPID pour les notifications push
 const VAPID_PUBLIC_KEY = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzuUPet5D_gSyZgniz65YZjpxwQ-_gem6YWaUswV8eOuVybf8yvyEIxSu9e6xIf-JjwKwZgc2W-j3JIXSR50AKQ';
+
+// Configuration des rappels selon la priorité
+const REMINDER_INTERVALS = {
+  high: 2 * 60 * 60 * 1000,   // 2 heures
+  medium: 4 * 60 * 60 * 1000, // 4 heures  
+  low: 8 * 60 * 60 * 1000     // 8 heures
+};
+
+// Heure du rappel matinal (8h00)
+const MORNING_REMINDER_HOUR = 8;
+
+interface ScheduledNotification {
+  taskId: string;
+  type: 'task_reminder' | 'morning_summary';
+  scheduledTime: number;
+  intervalId?: NodeJS.Timeout;
+}
 
 // Convertir la clé VAPID en Uint8Array
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -27,6 +44,7 @@ export const useNotifications = () => {
   const [isIOSDevice, setIsIOSDevice] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [canUseNotifications, setCanUseNotifications] = useState(false);
+  const [scheduledNotifications, setScheduledNotifications] = useState<ScheduledNotification[]>([]);
 
   // Vérifier si c'est iOS
   const checkIsIOS = () => {
@@ -35,17 +53,12 @@ export const useNotifications = () => {
            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   };
 
-  // Vérifier si l'app est en mode standalone (installée)
+  // Vérifier si l'app est en mode standalone
   const checkIsStandalone = () => {
     if (typeof window === 'undefined') return false;
     
-    // Méthode principale pour détecter le mode standalone
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
-    
-    // Fallback pour iOS Safari
     const isIOSStandalone = (window.navigator as any).standalone === true;
-    
-    // Vérifier si l'app a été lancée depuis l'écran d'accueil
     const hasStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches ||
                                 window.matchMedia('(display-mode: fullscreen)').matches ||
                                 window.matchMedia('(display-mode: minimal-ui)').matches;
@@ -53,7 +66,7 @@ export const useNotifications = () => {
     return isStandaloneMode || isIOSStandalone || hasStandaloneDisplay;
   };
 
-  // Initialiser les notifications push
+  // Initialiser les notifications
   useEffect(() => {
     const initializeNotifications = async () => {
       const isIOS = checkIsIOS();
@@ -62,23 +75,18 @@ export const useNotifications = () => {
       setIsIOSDevice(isIOS);
       setIsStandalone(isStandaloneApp);
       
-      console.log('Environnement détecté:', { isIOS, isStandaloneApp });
-      
       // Sur iOS, les notifications ne fonctionnent que si l'app est installée
       if (isIOS && !isStandaloneApp) {
         setCanUseNotifications(false);
-        setError('Pour recevoir des notifications sur iOS, veuillez installer l\'application sur votre écran d\'accueil');
         return;
       }
 
       try {
-        // Vérifier le support des notifications
         if (!('Notification' in window)) {
           setError('Les notifications ne sont pas supportées par ce navigateur');
           return;
         }
 
-        // Vérifier le support des service workers
         if (!('serviceWorker' in navigator)) {
           setError('Les service workers ne sont pas supportés');
           return;
@@ -88,21 +96,13 @@ export const useNotifications = () => {
 
         // Enregistrer le service worker
         const registration = await navigator.serviceWorker.register('/service-worker.js');
-        console.log('Service Worker enregistré:', registration);
 
-        // Vérifier les permissions existantes
-        if (Notification.permission === 'granted') {
-          setPermissionGranted(true);
-          // Pour iOS, on évite les clés VAPID qui peuvent causer des problèmes
-          if (isIOS) {
-            console.log('iOS détecté - utilisation des notifications sans VAPID');
-            setSubscription({ endpoint: 'ios-local' } as any); // Mock subscription pour iOS
-          } else {
-            await createPushSubscription(registration);
-          }
-        } else if (Notification.permission === 'denied') {
-          setError('Les notifications ont été refusées. Veuillez les autoriser dans les paramètres de votre navigateur.');
-        }
+        // Demander automatiquement les permissions
+        await requestPermission();
+
+        // Programmer le rappel matinal quotidien
+        scheduleMorningReminder();
+
       } catch (err) {
         console.error('Erreur lors de l\'initialisation des notifications:', err);
         setError('Erreur lors de l\'initialisation des notifications');
@@ -112,101 +112,24 @@ export const useNotifications = () => {
     initializeNotifications();
   }, []);
 
-  // Créer une souscription push (uniquement pour non-iOS)
-  const createPushSubscription = async (registration: ServiceWorkerRegistration) => {
-    try {
-      console.log('Création de souscription push...');
-      
-      // Vérifier le support des push notifications
-      if (!('PushManager' in window)) {
-        throw new Error('Les notifications push ne sont pas supportées');
-      }
-
-      // Vérifier si une souscription existe déjà
-      let pushSubscription = await registration.pushManager.getSubscription();
-
-      if (!pushSubscription) {
-        console.log('Création d\'une nouvelle souscription...');
-        
-        // Créer une nouvelle souscription
-        pushSubscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-        
-        console.log('Souscription créée avec succès');
-      } else {
-        console.log('Souscription existante trouvée');
-      }
-
-      setSubscription(pushSubscription);
-      
-      // Envoyer la souscription au serveur (vous devrez implémenter cette partie)
-      await sendSubscriptionToServer(pushSubscription);
-      
-      console.log('Souscription push créée:', pushSubscription);
-    } catch (err) {
-      console.error('Erreur détaillée lors de la création de la souscription push:', err);
-      
-      // Messages d'erreur plus spécifiques
-      if (err instanceof Error) {
-        if (err.message.includes('not supported')) {
-          setError('Votre navigateur ne supporte pas les notifications push');
-        } else if (err.message.includes('permission')) {
-          setError('Permission refusée pour les notifications push');
-        } else {
-          setError(`Erreur de souscription: ${err.message}`);
-        }
-      } else {
-        setError('Erreur lors de la création de la souscription push');
-      }
-    }
-  };
-
-  // Envoyer la souscription au serveur
-  const sendSubscriptionToServer = async (subscription: PushSubscription) => {
-    try {
-      // Ici vous devriez envoyer la souscription à votre backend
-      // Pour l'instant, on la stocke dans le localStorage comme exemple
-      localStorage.setItem('pushSubscription', JSON.stringify(subscription));
-      console.log('Souscription sauvegardée localement');
-    } catch (err) {
-      console.error('Erreur lors de l\'envoi de la souscription:', err);
-    }
-  };
-
   // Demander la permission pour les notifications
   const requestPermission = async () => {
     try {
       if (!canUseNotifications) {
-        if (isIOSDevice && !isStandalone) {
-          setError('Pour recevoir des notifications sur iOS, veuillez installer l\'application sur votre écran d\'accueil');
-        } else {
-          setError('Les notifications push ne sont pas supportées sur cet appareil');
-        }
         return false;
       }
 
-      console.log('Demande de permission pour les notifications...');
       const permission = await Notification.requestPermission();
       setPermissionGranted(permission === 'granted');
 
       if (permission === 'granted') {
-        console.log('Permission accordée');
-        
         if (isIOSDevice) {
-          // Pour iOS, on utilise des notifications locales simples
-          console.log('iOS: utilisation des notifications locales');
           setSubscription({ endpoint: 'ios-local' } as any);
         } else {
-          // Pour les autres plateformes, créer une vraie souscription push
           const registration = await navigator.serviceWorker.ready;
           await createPushSubscription(registration);
         }
-        
-        setError(null); // Effacer les erreurs précédentes
-      } else if (permission === 'denied') {
-        setError('Permission refusée. Veuillez autoriser les notifications dans les paramètres.');
+        setError(null);
       }
 
       return permission === 'granted';
@@ -217,160 +140,226 @@ export const useNotifications = () => {
     }
   };
 
-  // Programmer une notification push pour une tâche
-  const scheduleNotification = async (task: Task, notificationTime: Date) => {
+  // Créer une souscription push (non-iOS)
+  const createPushSubscription = async (registration: ServiceWorkerRegistration) => {
     try {
-      if (!canUseNotifications) {
-        console.log('Notifications non disponibles sur cet appareil/configuration');
-        return false;
+      if (!('PushManager' in window)) {
+        throw new Error('Les notifications push ne sont pas supportées');
       }
 
-      if (!permissionGranted || !subscription) {
-        const granted = await requestPermission();
-        if (!granted) return false;
+      let pushSubscription = await registration.pushManager.getSubscription();
+
+      if (!pushSubscription) {
+        pushSubscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
       }
 
-      const timeUntilNotification = notificationTime.getTime() - Date.now();
-      if (timeUntilNotification <= 0) {
-        console.log('L\'heure de notification est déjà passée');
-        return false;
-      }
+      setSubscription(pushSubscription);
+      localStorage.setItem('pushSubscription', JSON.stringify(pushSubscription));
+    } catch (err) {
+      console.error('Erreur lors de la création de la souscription push:', err);
+    }
+  };
 
-      // Programmer la notification
+  // Envoyer une notification
+  const sendNotification = async (title: string, body: string, data?: any) => {
+    try {
+      if (!permissionGranted) return false;
+
       const notificationData = {
-        taskId: task.id,
-        title: 'Rappel de tâche',
-        body: task.title,
-        scheduledTime: notificationTime.toISOString(),
-        url: window.location.origin
+        title,
+        body,
+        url: window.location.origin,
+        ...data
       };
 
-      // Pour l'instant, simuler l'envoi immédiat après le délai
-      setTimeout(async () => {
-        await sendImmediatePushNotification(notificationData);
-      }, timeUntilNotification);
-
-      console.log(`Notification programmée pour ${task.title} dans ${timeUntilNotification}ms`);
-      return true;
-    } catch (err) {
-      console.error('Erreur lors de la programmation de la notification:', err);
-      setError('Erreur lors de la programmation de la notification');
-      return false;
-    }
-  };
-
-  // Envoyer une notification push immédiate
-  const sendImmediatePushNotification = async (data: any) => {
-    try {
-      console.log('Envoi de notification:', { isIOSDevice, data });
-      
       if (isIOSDevice) {
-        // Pour iOS, essayer plusieurs approches
-        console.log('iOS: Tentative de notification locale directe');
-        
-        try {
-          // Approche 1: Notification directe (plus fiable sur iOS)
-          const notification = new Notification(data.title || 'Todo List', {
-            body: data.body || 'Nouvelle notification',
-            icon: '/icons/icon-192x192.png',
-            badge: '/icons/badge-96x96.png',
-            tag: data.taskId ? `task-${data.taskId}` : 'notification',
-            requireInteraction: true,
-            data: {
-              url: data.url || window.location.origin,
-              taskId: data.taskId
-            }
-          });
-          
-          console.log('iOS: Notification directe créée avec succès');
-          
-          // Gérer le clic sur la notification
-          notification.onclick = function(event) {
-            console.log('Notification cliquée');
-            event.preventDefault();
-            if (data.url) {
-              window.focus();
-              // Pour iOS, juste mettre le focus sur la fenêtre
-            }
-            notification.close();
-          };
-          
-          return;
-        } catch (directError) {
-          console.error('iOS: Échec de la notification directe:', directError);
-        }
-        
-        // Approche 2: Via service worker en fallback
-        if ('serviceWorker' in navigator) {
-          console.log('iOS: Tentative via service worker');
-          const registration = await navigator.serviceWorker.ready;
-          
-          if (registration.active) {
-            registration.active.postMessage({
-              type: 'SIMULATE_PUSH',
-              data: data
-            });
-            console.log('iOS: Message envoyé au service worker');
-          } else {
-            console.error('iOS: Service worker non actif');
-          }
-        }
+        // Notification directe pour iOS
+        const notification = new Notification(title, {
+          body,
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/badge-96x96.png',
+          tag: data?.tag || 'general',
+          requireInteraction: false,
+          data: notificationData
+        });
+
+        notification.onclick = function(event) {
+          event.preventDefault();
+          window.focus();
+          notification.close();
+        };
       } else {
-        // Pour les autres plateformes, utiliser le service worker
-        console.log('Non-iOS: Utilisation du service worker');
+        // Via service worker pour autres plateformes
         if ('serviceWorker' in navigator) {
           const registration = await navigator.serviceWorker.ready;
-          
           if (registration.active) {
             registration.active.postMessage({
               type: 'SIMULATE_PUSH',
-              data: data
+              data: notificationData
             });
-            console.log('Non-iOS: Message envoyé au service worker');
-          } else {
-            console.error('Non-iOS: Service worker non actif');
           }
         }
       }
+
+      return true;
     } catch (err) {
       console.error('Erreur lors de l\'envoi de la notification:', err);
+      return false;
     }
   };
 
-  // Envoyer une notification de test
-  const sendTestNotification = async () => {
-    try {
-      if (!canUseNotifications) {
-        return false;
-      }
+  // Programmer les rappels pour une tâche selon sa priorité
+  const scheduleTaskReminders = async (task: Task) => {
+    if (!permissionGranted || !task.dueDate) return;
 
-      if (!permissionGranted) {
-        const granted = await requestPermission();
-        if (!granted) return false;
-      }
+    // Annuler les rappels existants pour cette tâche
+    cancelTaskReminders(task.id);
 
-      await sendImmediatePushNotification({
-        title: 'Notification de test',
-        body: isIOSDevice ? 'Notifications push iOS fonctionnelles ! 🎉' : 'Ceci est une notification push de test !',
-        url: window.location.origin
+    const now = new Date();
+    const dueDate = new Date(task.dueDate);
+    const timeUntilDue = dueDate.getTime() - now.getTime();
+
+    // Ne pas programmer si la tâche est déjà échue
+    if (timeUntilDue <= 0) return;
+
+    const interval = REMINDER_INTERVALS[task.priority];
+    const reminderTimes: number[] = [];
+
+    // Calculer les moments de rappel selon la priorité
+    let nextReminderTime = now.getTime() + interval;
+    while (nextReminderTime < dueDate.getTime()) {
+      reminderTimes.push(nextReminderTime);
+      nextReminderTime += interval;
+    }
+
+    // Ajouter un rappel final 1 heure avant l'échéance
+    const finalReminderTime = dueDate.getTime() - (60 * 60 * 1000);
+    if (finalReminderTime > now.getTime()) {
+      reminderTimes.push(finalReminderTime);
+    }
+
+    // Programmer tous les rappels
+    reminderTimes.forEach((reminderTime, index) => {
+      const timeUntilReminder = reminderTime - now.getTime();
+      
+      const timeoutId = setTimeout(async () => {
+        const isLastReminder = index === reminderTimes.length - 1;
+        const priorityEmoji = task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢';
+        
+        const title = isLastReminder ? '⏰ Rappel urgent !' : `${priorityEmoji} Rappel de tâche`;
+        const body = isLastReminder 
+          ? `Échéance dans 1 heure : ${task.title}`
+          : `N'oubliez pas : ${task.title}`;
+
+        await sendNotification(title, body, {
+          tag: `task-${task.id}-${index}`,
+          taskId: task.id
+        });
+      }, timeUntilReminder);
+
+      // Stocker la notification programmée
+      const scheduledNotif: ScheduledNotification = {
+        taskId: task.id,
+        type: 'task_reminder',
+        scheduledTime: reminderTime,
+        intervalId: timeoutId as NodeJS.Timeout
+      };
+
+      setScheduledNotifications(prev => [...prev, scheduledNotif]);
+    });
+  };
+
+  // Annuler les rappels pour une tâche
+  const cancelTaskReminders = (taskId: string) => {
+    setScheduledNotifications(prev => {
+      const notificationsToCancel = prev.filter(notif => notif.taskId === taskId);
+      const remainingNotifications = prev.filter(notif => notif.taskId !== taskId);
+
+      notificationsToCancel.forEach(notif => {
+        if (notif.intervalId) {
+          clearTimeout(notif.intervalId);
+        }
       });
 
-      return true;
-    } catch (err) {
-      console.error('Erreur lors de l\'envoi de la notification de test:', err);
-      return false;
-    }
+      return remainingNotifications;
+    });
+  };
+
+  // Programmer le rappel matinal quotidien
+  const scheduleMorningReminder = () => {
+    const scheduleNextMorningReminder = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(MORNING_REMINDER_HOUR, 0, 0, 0);
+
+      const timeUntilMorning = tomorrow.getTime() - now.getTime();
+
+      setTimeout(async () => {
+        // Récupérer les tâches depuis le localStorage
+        const storedTasks = localStorage.getItem('tasks');
+        if (storedTasks) {
+          const tasks: Task[] = JSON.parse(storedTasks);
+          const incompleteTasks = tasks.filter(task => !task.completed);
+          const taskCount = incompleteTasks.length;
+
+          if (taskCount > 0) {
+            const urgentTasks = incompleteTasks.filter(task => {
+              if (!task.dueDate) return false;
+              const dueDate = new Date(task.dueDate);
+              const today = new Date();
+              today.setHours(23, 59, 59, 999);
+              return dueDate <= today;
+            }).length;
+
+
+            let title = '🌅 Bonjour !';
+            let body = '';
+
+            if (urgentTasks > 0) {
+              body = `Vous avez ${taskCount} tâche${taskCount > 1 ? 's' : ''} à faire, dont ${urgentTasks} urgente${urgentTasks > 1 ? 's' : ''} !`;
+            } else {
+              body = `Vous avez ${taskCount} tâche${taskCount > 1 ? 's' : ''} à accomplir aujourd'hui.`;
+            }
+
+            await sendNotification(title, body, {
+              tag: 'morning-reminder'
+            });
+          }
+        }
+
+        // Programmer le prochain rappel matinal
+        scheduleNextMorningReminder();
+      }, timeUntilMorning);
+    };
+
+    scheduleNextMorningReminder();
+  };
+
+  // Fonction pour mettre à jour les notifications quand les tâches changent
+  const updateTaskNotifications = (tasks: Task[]) => {
+    if (!permissionGranted) return;
+
+    // Reprogrammer les rappels pour toutes les tâches incomplètes
+    tasks
+      .filter(task => !task.completed && task.dueDate)
+      .forEach(task => {
+        scheduleTaskReminders(task);
+      });
   };
 
   return {
     permissionGranted,
     error,
-    subscription,
+    canUseNotifications,
     isIOSDevice,
     isStandalone,
-    canUseNotifications,
-    requestPermission,
-    scheduleNotification,
-    sendTestNotification
+    scheduleTaskReminders,
+    cancelTaskReminders,
+    updateTaskNotifications,
+    sendNotification
   };
 }; 

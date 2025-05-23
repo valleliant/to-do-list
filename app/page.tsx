@@ -12,8 +12,7 @@ import TaskDetail from './components/TaskDetail';
 import TaskForm from './components/TaskForm';
 import WeatherWidget from './components/WeatherWidget';
 import FocusMode from './components/FocusMode';
-import NotificationTest from './components/NotificationTest';
-import InstallPrompt from './components/InstallPrompt';
+import NotificationStatus from './components/NotificationStatus';
 
 export default function Home() {
   // États locaux
@@ -43,10 +42,20 @@ export default function Home() {
   } = useWeather();
   
   const { 
-    permissionGranted: notificationsPermissionGranted,
-    requestPermission: requestNotificationsPermission,
-    scheduleNotification
+    permissionGranted,
+    canUseNotifications,
+    scheduleTaskReminders,
+    cancelTaskReminders,
+    updateTaskNotifications,
+    sendNotification
   } = useNotifications();
+
+  // Synchroniser les notifications avec les tâches
+  useEffect(() => {
+    if (permissionGranted && tasks.length > 0) {
+      updateTaskNotifications(tasks);
+    }
+  }, [tasks, permissionGranted, updateTaskNotifications]);
 
   // Format de date pour l'affichage
   const formatDate = (date: Date) => {
@@ -93,16 +102,19 @@ export default function Home() {
     );
     setShowAddTaskForm(false);
     
-    // Envoyer une notification 10 secondes après l'ajout d'une tâche
-    if (newTask) {
-      // Demander la permission pour les notifications si nécessaire
-      if (!notificationsPermissionGranted) {
-        await requestNotificationsPermission();
-      }
+    // Programmer les rappels pour la nouvelle tâche
+    if (newTask && newTask.dueDate) {
+      await scheduleTaskReminders(newTask);
       
-      // Programmer une notification 10 secondes après l'ajout
-      const notificationTime = new Date(Date.now() + 10000); // 10 secondes
-      scheduleNotification(newTask, notificationTime);
+      // Notification immédiate de confirmation
+      if (canUseNotifications) {
+        const priorityEmoji = newTask.priority === 'high' ? '🔴' : newTask.priority === 'medium' ? '🟡' : '🟢';
+        await sendNotification(
+          '✅ Tâche ajoutée !', 
+          `${priorityEmoji} ${newTask.title}`, 
+          { tag: 'task-added' }
+        );
+      }
     }
   };
 
@@ -115,8 +127,44 @@ export default function Home() {
         priority: taskData.priority,
         dueDate: taskData.dueDate,
       });
+      
+      // Reprogrammer les rappels si la tâche a été modifiée
+      const updatedTask = tasks.find(t => t.id === taskData.id);
+      if (updatedTask && !updatedTask.completed && updatedTask.dueDate) {
+        await scheduleTaskReminders({ ...updatedTask, ...taskData } as TaskType);
+      }
+      
       setViewingTask(null);
     }
+  };
+
+  // Gérer la suppression d'une tâche
+  const handleDeleteTask = async (id: string) => {
+    // Annuler les rappels pour cette tâche
+    cancelTaskReminders(id);
+    await deleteTask(id);
+  };
+
+  // Gérer le basculement de completion d'une tâche
+  const handleToggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      if (!task.completed) {
+        // Si on marque la tâche comme terminée, annuler les rappels
+        cancelTaskReminders(id);
+        
+        // Notification de félicitations
+        if (canUseNotifications) {
+          await sendNotification(
+            '🎉 Tâche terminée !', 
+            `Bravo ! "${task.title}" est maintenant terminée.`, 
+            { tag: 'task-completed' }
+          );
+        }
+      }
+    }
+    
+    await toggleTaskCompletion(id);
   };
 
   // Grouper les tâches par date
@@ -222,7 +270,7 @@ export default function Home() {
             onClose={() => setViewingTask(null)} 
             onEdit={handleUpdateTask}
             onDelete={(id) => {
-              deleteTask(id);
+              handleDeleteTask(id);
               setViewingTask(null);
             }}
           />
@@ -286,24 +334,13 @@ export default function Home() {
           </div>
         </motion.div>
         
-        {/* Prompt d'installation PWA */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="mb-6"
-        >
-          <InstallPrompt />
-        </motion.div>
-        
-        {/* Test des notifications push */}
+        {/* État des notifications */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-6"
         >
-          <NotificationTest />
+          <NotificationStatus />
         </motion.div>
         
         {/* Liste des tâches */}
@@ -340,8 +377,8 @@ export default function Home() {
                     <Task
                       key={task.id}
                       task={task}
-                      onToggle={toggleTaskCompletion}
-                      onDelete={deleteTask}
+                      onToggle={handleToggleTask}
+                      onDelete={handleDeleteTask}
                       onEdit={(id) => {
                         const taskToView = tasks.find(t => t.id === id);
                         if (taskToView) setViewingTask(taskToView);
