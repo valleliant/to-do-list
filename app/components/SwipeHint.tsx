@@ -39,7 +39,7 @@ const SwipeHint: React.FC<SwipeHintProps> = ({ isVisible, onDismiss }) => {
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <span>Glissez rapidement vers la gauche pour terminer</span>
+                    <span>Glissez vers la gauche pour terminer</span>
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -49,7 +49,7 @@ const SwipeHint: React.FC<SwipeHintProps> = ({ isVisible, onDismiss }) => {
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <span>Glissez rapidement vers la droite pour supprimer</span>
+                    <span>Glissez vers la droite pour supprimer</span>
                   </div>
                   
                   <div className="flex items-center space-x-2 mt-3 p-2 bg-blue-50 rounded-lg">
@@ -58,7 +58,7 @@ const SwipeHint: React.FC<SwipeHintProps> = ({ isVisible, onDismiss }) => {
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <span className="text-xs text-blue-700">Un geste rapide suffit ! Plus besoin d'aller jusqu'au bout</span>
+                    <span className="text-xs text-blue-700">Style Gmail : confirmation visuelle avant l'action</span>
                   </div>
                 </div>
               </div>

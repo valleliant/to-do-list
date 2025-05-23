@@ -15,27 +15,29 @@ interface TaskProps {
 const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragProgress, setDragProgress] = useState(0);
+  const [actionState, setActionState] = useState<'none' | 'completing' | 'deleting'>('none');
   const x = useMotionValue(0);
   
-  // Seuils optimisés pour mobile
-  const SWIPE_THRESHOLD = 80; // Réduit de 180 à 80 pour mobile
-  const MAX_DRAG = 120; // Distance maximale de glissement
+  // Seuils optimisés style Gmail
+  const SWIPE_THRESHOLD = 60; // Encore plus bas pour être plus "glissant"
+  const MAX_DRAG = 100;
+  const VELOCITY_THRESHOLD = 300; // Réduit pour plus de sensibilité
   
-  // Transformations pour les indicateurs de glissement - plus réactives
-  const leftOpacity = useTransform(x, [-MAX_DRAG, -40, 0], [1, 0.8, 0]);
-  const rightOpacity = useTransform(x, [0, 40, MAX_DRAG], [0, 0.8, 1]);
-  const leftScale = useTransform(x, [-MAX_DRAG, -40, 0], [1.2, 1.05, 0.9]);
-  const rightScale = useTransform(x, [0, 40, MAX_DRAG], [0.9, 1.05, 1.2]);
+  // Transformations pour les indicateurs de glissement - style Gmail
+  const leftOpacity = useTransform(x, [-MAX_DRAG, -30, 0], [1, 0.9, 0]);
+  const rightOpacity = useTransform(x, [0, 30, MAX_DRAG], [0, 0.9, 1]);
+  const leftScale = useTransform(x, [-MAX_DRAG, -30, 0], [1.1, 1, 0.95]);
+  const rightScale = useTransform(x, [0, 30, MAX_DRAG], [0.95, 1, 1.1]);
   
-  // Couleur de fond selon la direction - transitions plus rapides
+  // Couleur de fond selon la direction - transitions Gmail-like
   const backgroundColor = useTransform(
     x,
-    [-MAX_DRAG, -60, -30, 0, 30, 60, MAX_DRAG],
+    [-MAX_DRAG, -40, -20, 0, 20, 40, MAX_DRAG],
     ['#10B981', '#10B981', '#1C3B46', '#1C3B46', '#1C3B46', '#EF4444', '#EF4444']
   );
 
-  // Rotation plus subtile pour mobile
-  const rotate = useTransform(x, [-MAX_DRAG, 0, MAX_DRAG], [-1, 0, 1]);
+  // Pas de rotation pour un style plus Gmail
+  const scale = useTransform(x, [-MAX_DRAG, 0, MAX_DRAG], [0.98, 1, 0.98]);
 
   // Écouter les changements de position pour la barre de progression
   useEffect(() => {
@@ -87,34 +89,42 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
 
   const priorityData = getPriorityData();
 
-  // Gestion du glissement optimisée pour mobile
+  // Gestion du glissement style Gmail
   const handleDragEnd = (event: any, info: PanInfo) => {
     setIsDragging(false);
     setDragProgress(0);
     
-    // Utilisation de la vélocité pour une meilleure réactivité mobile
     const velocity = info.velocity.x;
     const offset = info.offset.x;
     
-    // Si la vélocité est élevée, on peut déclencher avec un seuil plus bas
-    const velocityThreshold = 500; // pixels/seconde
-    const isHighVelocity = Math.abs(velocity) > velocityThreshold;
-    const dynamicThreshold = isHighVelocity ? SWIPE_THRESHOLD * 0.6 : SWIPE_THRESHOLD;
+    // Seuils très bas pour un glissement fluide
+    const isHighVelocity = Math.abs(velocity) > VELOCITY_THRESHOLD;
+    const dynamicThreshold = isHighVelocity ? SWIPE_THRESHOLD * 0.5 : SWIPE_THRESHOLD;
     
-    if (offset < -dynamicThreshold || (velocity < -velocityThreshold && offset < -30)) {
-      // Glissement vers la gauche - marquer comme terminé
-      onToggle(task.id);
-      // Animation de confirmation rapide
-      x.set(-200);
-      setTimeout(() => x.set(0), 150);
-    } else if (offset > dynamicThreshold || (velocity > velocityThreshold && offset > 30)) {
-      // Glissement vers la droite - supprimer
-      onDelete(task.id);
-      // Animation de confirmation rapide
-      x.set(200);
-      setTimeout(() => x.set(0), 150);
+    if (offset < -dynamicThreshold || (velocity < -VELOCITY_THRESHOLD && offset < -20)) {
+      // Animation de completion style Gmail
+      setActionState('completing');
+      x.set(-MAX_DRAG * 1.2);
+      
+      // Affichage de confirmation pendant 800ms
+      setTimeout(() => {
+        onToggle(task.id);
+        setActionState('none');
+      }, 800);
+      
+    } else if (offset > dynamicThreshold || (velocity > VELOCITY_THRESHOLD && offset > 20)) {
+      // Animation de suppression style Gmail
+      setActionState('deleting');
+      x.set(MAX_DRAG * 1.2);
+      
+      // Affichage de confirmation pendant 800ms
+      setTimeout(() => {
+        onDelete(task.id);
+        setActionState('none');
+      }, 800);
+      
     } else {
-      // Retour automatique au centre avec animation fluide
+      // Retour fluide au centre
       x.set(0);
     }
   };
@@ -123,7 +133,7 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
     setIsDragging(true);
   };
 
-  // Animation variants optimisées
+  // Animation variants style Gmail
   const variants = {
     initial: { opacity: 0, y: 20, scale: 0.95 },
     animate: { 
@@ -132,23 +142,30 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       scale: 1, 
       transition: { 
         type: 'spring', 
-        stiffness: 500, 
-        damping: 35 
+        stiffness: 400, 
+        damping: 30 
       } 
     },
     exit: { 
       opacity: 0, 
-      scale: 0.8,
-      y: -20,
+      scale: 0.9,
+      y: -10,
       transition: { 
-        duration: 0.25,
+        duration: 0.3,
         ease: "easeInOut"
       } 
     },
-    completed: {
-      scale: [1, 1.05, 1],
+    completing: {
+      backgroundColor: '#10B981',
       transition: {
-        duration: 0.4,
+        duration: 0.3,
+        ease: "easeInOut"
+      }
+    },
+    deleting: {
+      backgroundColor: '#EF4444',
+      transition: {
+        duration: 0.3,
         ease: "easeInOut"
       }
     }
@@ -170,20 +187,23 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
 
   return (
     <div className="relative mb-3 overflow-hidden rounded-xl">
-      {/* Indicateurs de glissement en arrière-plan */}
+      {/* Indicateurs de glissement en arrière-plan - style Gmail */}
       <div className="absolute inset-0 flex items-center justify-between px-6 rounded-xl">
         {/* Indicateur gauche - Terminé */}
         <motion.div 
           className="flex items-center text-white"
           style={{ opacity: leftOpacity, scale: leftScale }}
         >
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
+              <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="font-semibold text-lg">Terminé</span>
+            <div className="text-left">
+              <div className="font-semibold text-lg">Terminé</div>
+              <div className="text-sm opacity-90">Tâche accomplie</div>
+            </div>
           </div>
         </motion.div>
         
@@ -192,10 +212,13 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
           className="flex items-center text-white"
           style={{ opacity: rightOpacity, scale: rightScale }}
         >
-          <div className="flex items-center space-x-2">
-            <span className="font-semibold text-lg">Supprimer</span>
-            <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+          <div className="flex items-center space-x-3">
+            <div className="text-right">
+              <div className="font-semibold text-lg">Supprimer</div>
+              <div className="text-sm opacity-90">Effacer la tâche</div>
+            </div>
+            <div className="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
+              <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
@@ -207,33 +230,72 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       {/* Contenu principal de la tâche */}
       <motion.div
         initial="initial"
-        animate={task.completed ? "completed" : "animate"}
+        animate={
+          actionState === 'completing' ? 'completing' :
+          actionState === 'deleting' ? 'deleting' :
+          task.completed ? "animate" : "animate"
+        }
         exit="exit"
         variants={variants}
         style={{ 
           x,
-          backgroundColor: isDragging ? backgroundColor : '#1C3B46',
-          rotate: isDragging ? rotate : 0
+          backgroundColor: 
+            actionState === 'completing' ? '#10B981' :
+            actionState === 'deleting' ? '#EF4444' :
+            isDragging ? backgroundColor : '#1C3B46',
+          scale: isDragging ? scale : 1
         }}
         drag="x"
         dragConstraints={{ left: -MAX_DRAG, right: MAX_DRAG }}
-        dragElastic={0.05}
-        dragMomentum={false}
+        dragElastic={0.02}
+        dragMomentum={true}
         dragTransition={{ 
-          bounceStiffness: 800, 
-          bounceDamping: 40,
-          power: 0.2,
-          timeConstant: 150
+          bounceStiffness: 600, 
+          bounceDamping: 30,
+          power: 0.1,
+          timeConstant: 100
         }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onClick={() => !isDragging && onView(task)}
-        className={`relative rounded-xl p-4 cursor-pointer transition-all duration-150 ${
+        className={`relative rounded-xl p-4 cursor-pointer transition-all duration-200 ${
           task.completed ? 'opacity-75' : ''
-        }`}
-        whileHover={!isDragging ? { y: -1, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' } : {}}
-        whileTap={!isDragging ? { scale: 0.99 } : {}}
+        } ${actionState !== 'none' ? 'pointer-events-none' : ''}`}
+        whileHover={!isDragging && actionState === 'none' ? { y: -1, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' } : {}}
+        whileTap={!isDragging && actionState === 'none' ? { scale: 0.99 } : {}}
       >
+        {/* Overlay de confirmation d'action */}
+        {actionState !== 'none' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-xl"
+          >
+            <div className="flex items-center space-x-3 text-white">
+              {actionState === 'completing' ? (
+                <>
+                  <div className="w-8 h-8 bg-white/30 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">Tâche terminée !</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-8 h-8 bg-white/30 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">Tâche supprimée !</span>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         <div className="flex items-start">
           <motion.span 
             className="mr-3 text-lg flex items-center justify-center w-6 h-6"
@@ -303,14 +365,14 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
           </motion.button>
         </div>
         
-        {/* Indicateur de progression du glissement */}
-        {isDragging && (
+        {/* Barre de progression du glissement */}
+        {isDragging && actionState === 'none' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
           >
-            <div className="bg-white/20 rounded-full h-1 w-32">
+            <div className="bg-white/20 rounded-full h-1 w-24">
               <motion.div
                 className="h-full rounded-full bg-white/60"
                 style={{
