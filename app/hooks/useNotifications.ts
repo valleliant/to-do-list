@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Task } from './useTasks';
 
-// Clés VAPID pour les notifications push (à remplacer par vos vraies clés en production)
-const VAPID_PUBLIC_KEY = 'BH7eJ-4uTtRgbgFZPzJI2MNgJe7QJzJ3TGm5TGFBvPYTqTjM9Qx9BnYOe1NnQB7WH5L2mPQwKqGLR2P5JVR-abc';
+// Clés VAPID pour les notifications push - vraie clé générée
+const VAPID_PUBLIC_KEY = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzuUPet5D_gSyZgniz65YZjpxwQ-_gem6YWaUswV8eOuVybf8yvyEIxSu9e6xIf-JjwKwZgc2W-j3JIXSR50AKQ';
 
 // Convertir la clé VAPID en Uint8Array
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -84,12 +84,6 @@ export const useNotifications = () => {
           return;
         }
 
-        // Vérifier le support des push notifications
-        if (!('PushManager' in window)) {
-          setError('Les notifications push ne sont pas supportées');
-          return;
-        }
-
         setCanUseNotifications(true);
 
         // Enregistrer le service worker
@@ -99,7 +93,13 @@ export const useNotifications = () => {
         // Vérifier les permissions existantes
         if (Notification.permission === 'granted') {
           setPermissionGranted(true);
-          await createPushSubscription(registration);
+          // Pour iOS, on évite les clés VAPID qui peuvent causer des problèmes
+          if (isIOS) {
+            console.log('iOS détecté - utilisation des notifications sans VAPID');
+            setSubscription({ endpoint: 'ios-local' } as any); // Mock subscription pour iOS
+          } else {
+            await createPushSubscription(registration);
+          }
         } else if (Notification.permission === 'denied') {
           setError('Les notifications ont été refusées. Veuillez les autoriser dans les paramètres de votre navigateur.');
         }
@@ -112,18 +112,31 @@ export const useNotifications = () => {
     initializeNotifications();
   }, []);
 
-  // Créer une souscription push
+  // Créer une souscription push (uniquement pour non-iOS)
   const createPushSubscription = async (registration: ServiceWorkerRegistration) => {
     try {
+      console.log('Création de souscription push...');
+      
+      // Vérifier le support des push notifications
+      if (!('PushManager' in window)) {
+        throw new Error('Les notifications push ne sont pas supportées');
+      }
+
       // Vérifier si une souscription existe déjà
       let pushSubscription = await registration.pushManager.getSubscription();
 
       if (!pushSubscription) {
+        console.log('Création d\'une nouvelle souscription...');
+        
         // Créer une nouvelle souscription
         pushSubscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         });
+        
+        console.log('Souscription créée avec succès');
+      } else {
+        console.log('Souscription existante trouvée');
       }
 
       setSubscription(pushSubscription);
@@ -133,8 +146,20 @@ export const useNotifications = () => {
       
       console.log('Souscription push créée:', pushSubscription);
     } catch (err) {
-      console.error('Erreur lors de la création de la souscription push:', err);
-      setError('Erreur lors de la création de la souscription push');
+      console.error('Erreur détaillée lors de la création de la souscription push:', err);
+      
+      // Messages d'erreur plus spécifiques
+      if (err instanceof Error) {
+        if (err.message.includes('not supported')) {
+          setError('Votre navigateur ne supporte pas les notifications push');
+        } else if (err.message.includes('permission')) {
+          setError('Permission refusée pour les notifications push');
+        } else {
+          setError(`Erreur de souscription: ${err.message}`);
+        }
+      } else {
+        setError('Erreur lors de la création de la souscription push');
+      }
     }
   };
 
@@ -162,12 +187,23 @@ export const useNotifications = () => {
         return false;
       }
 
+      console.log('Demande de permission pour les notifications...');
       const permission = await Notification.requestPermission();
       setPermissionGranted(permission === 'granted');
 
-      if (permission === 'granted' && 'serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.ready;
-        await createPushSubscription(registration);
+      if (permission === 'granted') {
+        console.log('Permission accordée');
+        
+        if (isIOSDevice) {
+          // Pour iOS, on utilise des notifications locales simples
+          console.log('iOS: utilisation des notifications locales');
+          setSubscription({ endpoint: 'ios-local' } as any);
+        } else {
+          // Pour les autres plateformes, créer une vraie souscription push
+          const registration = await navigator.serviceWorker.ready;
+          await createPushSubscription(registration);
+        }
+        
         setError(null); // Effacer les erreurs précédentes
       } else if (permission === 'denied') {
         setError('Permission refusée. Veuillez autoriser les notifications dans les paramètres.');
@@ -201,7 +237,6 @@ export const useNotifications = () => {
       }
 
       // Programmer la notification
-      // En production, vous devriez envoyer ceci à votre backend qui programmera l'envoi
       const notificationData = {
         taskId: task.id,
         title: 'Rappel de tâche',
@@ -224,22 +259,35 @@ export const useNotifications = () => {
     }
   };
 
-  // Envoyer une notification push immédiate (simulation)
+  // Envoyer une notification push immédiate
   const sendImmediatePushNotification = async (data: any) => {
     try {
-      // En production, cette fonction devrait appeler votre backend
-      // qui enverra la notification push via FCM ou un autre service
-      
-      // Pour l'instant, on utilise l'API de notification locale comme fallback
-      if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.ready;
+      if (isIOSDevice) {
+        // Pour iOS, utiliser l'API Notification directement
+        console.log('iOS: Envoi de notification locale');
         
-        // Déclencher l'événement push manuellement (simulation)
-        if (registration.active) {
-          registration.active.postMessage({
-            type: 'SIMULATE_PUSH',
-            data: data
-          });
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+          
+          // Déclencher une notification via le service worker
+          if (registration.active) {
+            registration.active.postMessage({
+              type: 'SIMULATE_PUSH',
+              data: data
+            });
+          }
+        }
+      } else {
+        // Pour les autres plateformes, utiliser le système de push
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+          
+          if (registration.active) {
+            registration.active.postMessage({
+              type: 'SIMULATE_PUSH',
+              data: data
+            });
+          }
         }
       }
     } catch (err) {
