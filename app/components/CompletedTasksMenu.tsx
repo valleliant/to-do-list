@@ -117,7 +117,11 @@ const CompletedTasksMenu: React.FC<CompletedTasksMenuProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   className="text-center py-12"
                 >
-                  <div className="text-6xl mb-4">🎉</div>
+                  <div className="w-16 h-16 mx-auto mb-4 bg-white/10 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
                   <h3 className="text-lg font-medium text-white mb-2">Aucune tâche terminée</h3>
                   <p className="text-white/70 text-sm">
                     Les tâches que vous marquerez comme terminées apparaîtront ici.
@@ -150,7 +154,13 @@ const CompletedTasksMenu: React.FC<CompletedTasksMenuProps> = ({
                             className="bg-[#1C3B46] rounded-xl p-4 relative group"
                           >
                             <div className="flex items-start">
-                              <span className="mr-3 text-lg">✅</span>
+                              <div className="mr-3 w-6 h-6 flex items-center justify-center">
+                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
                               
                               <div className="flex-grow">
                                 <h3 className="font-medium text-base text-white/90 line-through">

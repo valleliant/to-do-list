@@ -17,17 +17,20 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
   const x = useMotionValue(0);
   
   // Transformations pour les indicateurs de glissement
-  const leftOpacity = useTransform(x, [-150, -50, 0], [1, 0.5, 0]);
-  const rightOpacity = useTransform(x, [0, 50, 150], [0, 0.5, 1]);
-  const leftScale = useTransform(x, [-150, -50, 0], [1.2, 1, 0.8]);
-  const rightScale = useTransform(x, [0, 50, 150], [0.8, 1, 1.2]);
+  const leftOpacity = useTransform(x, [-200, -100, 0], [1, 0.7, 0]);
+  const rightOpacity = useTransform(x, [0, 100, 200], [0, 0.7, 1]);
+  const leftScale = useTransform(x, [-200, -100, 0], [1.3, 1.1, 0.8]);
+  const rightScale = useTransform(x, [0, 100, 200], [0.8, 1.1, 1.3]);
   
-  // Couleur de fond selon la direction
+  // Couleur de fond selon la direction - plus progressive
   const backgroundColor = useTransform(
     x,
-    [-150, -50, 0, 50, 150],
-    ['#10B981', '#10B981', '#1C3B46', '#EF4444', '#EF4444']
+    [-200, -100, -50, 0, 50, 100, 200],
+    ['#10B981', '#10B981', '#1C3B46', '#1C3B46', '#1C3B46', '#EF4444', '#EF4444']
   );
+
+  // Rotation légère pour plus de dynamisme
+  const rotate = useTransform(x, [-200, 0, 200], [-2, 0, 2]);
 
   // Styles et couleurs selon la priorité
   const getPriorityData = () => {
@@ -35,25 +38,33 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       case 'high':
         return {
           color: 'bg-red-500',
-          bullet: '🔴',
+          icon: (
+            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          ),
           label: 'Haute'
         };
       case 'medium':
         return {
           color: 'bg-orange-500',
-          bullet: '🟠',
+          icon: (
+            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+          ),
           label: 'Moyenne'
         };
       case 'low':
         return {
           color: 'bg-green-500',
-          bullet: '🟢',
+          icon: (
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+          ),
           label: 'Basse'
         };
       default:
         return {
-          color: 'bg-blue-500',
-          bullet: '⚪',
+          color: 'bg-gray-500',
+          icon: (
+            <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+          ),
           label: 'Non définie'
         };
     }
@@ -64,18 +75,26 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
   // Gestion du glissement
   const handleDragEnd = (event: any, info: PanInfo) => {
     setIsDragging(false);
-    const threshold = 100;
+    const threshold = 180; // Seuil plus élevé pour aller jusqu'au bout
     
     if (info.offset.x < -threshold) {
       // Glissement vers la gauche - marquer comme terminé
-      onToggle(task.id);
+      // Animation de sortie vers la gauche
+      x.set(-300);
+      setTimeout(() => {
+        onToggle(task.id);
+      }, 200);
     } else if (info.offset.x > threshold) {
       // Glissement vers la droite - supprimer
-      onDelete(task.id);
+      // Animation de sortie vers la droite
+      x.set(300);
+      setTimeout(() => {
+        onDelete(task.id);
+      }, 200);
+    } else {
+      // Retour automatique au centre avec animation fluide
+      x.set(0);
     }
-    
-    // Remettre à zéro la position avec animation
-    x.set(0);
   };
 
   const handleDragStart = () => {
@@ -91,8 +110,8 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       scale: 1, 
       transition: { 
         type: 'spring', 
-        stiffness: 300, 
-        damping: 25 
+        stiffness: 400, 
+        damping: 30 
       } 
     },
     exit: { 
@@ -100,7 +119,7 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
       scale: 0.8,
       y: -20,
       transition: { 
-        duration: 0.4,
+        duration: 0.3,
         ease: "easeInOut"
       } 
     },
@@ -144,12 +163,12 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
           style={{ opacity: leftOpacity, scale: leftScale }}
         >
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="font-medium">Terminé</span>
+            <span className="font-semibold text-lg">Terminé</span>
           </div>
         </motion.div>
         
@@ -159,9 +178,9 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
           style={{ opacity: rightOpacity, scale: rightScale }}
         >
           <div className="flex items-center space-x-2">
-            <span className="font-medium">Supprimer</span>
-            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <span className="font-semibold text-lg">Supprimer</span>
+            <div className="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
@@ -178,27 +197,42 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
         variants={variants}
         style={{ 
           x,
-          backgroundColor: isDragging ? backgroundColor : '#1C3B46'
+          backgroundColor: isDragging ? backgroundColor : '#1C3B46',
+          rotate: isDragging ? rotate : 0
         }}
         drag="x"
-        dragConstraints={{ left: -200, right: 200 }}
-        dragElastic={0.2}
+        dragConstraints={{ left: -250, right: 250 }}
+        dragElastic={0.1}
+        dragTransition={{ 
+          bounceStiffness: 600, 
+          bounceDamping: 20,
+          power: 0.3,
+          timeConstant: 200
+        }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onClick={() => !isDragging && onView(task)}
         className={`relative rounded-xl p-4 cursor-pointer transition-all duration-200 ${
           task.completed ? 'opacity-75' : ''
         }`}
-        whileHover={!isDragging ? { y: -2, boxShadow: '0 5px 15px rgba(0,0,0,0.1)' } : {}}
+        whileHover={!isDragging ? { y: -2, boxShadow: '0 8px 25px rgba(0,0,0,0.15)' } : {}}
         whileTap={!isDragging ? { scale: 0.98 } : {}}
       >
         <div className="flex items-start">
           <motion.span 
-            className="mr-3 text-lg"
+            className="mr-3 text-lg flex items-center justify-center w-6 h-6"
             animate={task.completed ? { scale: [1, 1.3, 1] } : {}}
             transition={{ duration: 0.3 }}
           >
-            {task.completed ? '✅' : priorityData.bullet}
+            {task.completed ? (
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            ) : (
+              priorityData.icon
+            )}
           </motion.span>
           
           <div className="flex-grow">
@@ -253,14 +287,21 @@ const Task: React.FC<TaskProps> = ({ task, onToggle, onDelete, onEdit, onView })
           </motion.button>
         </div>
         
-        {/* Indicateur de glissement actif */}
+        {/* Indicateur de progression du glissement */}
         {isDragging && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute top-2 right-2 text-white/50 text-xs"
+            className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
           >
-            ← Terminé | Supprimer →
+            <div className="bg-white/20 rounded-full h-1 w-32">
+              <motion.div
+                className="h-full rounded-full bg-white/60"
+                style={{
+                  width: useTransform(x, [-180, 0, 180], ['100%', '0%', '100%'])
+                }}
+              />
+            </div>
           </motion.div>
         )}
       </motion.div>

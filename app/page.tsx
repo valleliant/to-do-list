@@ -369,17 +369,22 @@ export default function Home() {
             </h1>
             
             {/* Bouton pour les tâches terminées */}
-            {completedTasks.length > 0 && (
-              <motion.button
-                onClick={() => setShowCompletedTasks(true)}
-                className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-sm flex items-center space-x-2"
-                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.3)' }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <span>✅</span>
-                <span>{completedTasks.length}</span>
-              </motion.button>
-            )}
+            <motion.button
+              onClick={() => setShowCompletedTasks(true)}
+              className={`backdrop-blur-sm rounded-full px-3 py-1 text-sm flex items-center space-x-2 transition-all ${
+                completedTasks.length > 0 
+                  ? 'bg-white/20 hover:bg-white/30' 
+                  : 'bg-white/10 opacity-50 cursor-not-allowed'
+              }`}
+              whileHover={completedTasks.length > 0 ? { scale: 1.05 } : {}}
+              whileTap={completedTasks.length > 0 ? { scale: 0.95 } : {}}
+              disabled={completedTasks.length === 0}
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>{completedTasks.length}</span>
+            </motion.button>
           </div>
           
           {/* Widget météo simplifié comme dans la maquette */}
