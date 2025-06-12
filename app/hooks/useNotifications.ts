@@ -83,6 +83,21 @@ export const useNotifications = () => {
       setIsIOSDevice(isIOS);
       setIsStandalone(isStandaloneApp);
       
+      // Vérifier les APIs nécessaires
+      if (!('Notification' in window)) {
+        console.log('❌ API Notification non supportée');
+        setError('Les notifications ne sont pas supportées par ce navigateur');
+        setCanUseNotifications(false);
+        return;
+      }
+
+      if (!('serviceWorker' in navigator)) {
+        console.log('❌ Service Workers non supportés');
+        setError('Les service workers ne sont pas supportés');
+        setCanUseNotifications(false);
+        return;
+      }
+
       // Sur iOS, les notifications ne fonctionnent que si l'app est installée
       if (isIOS && !isStandaloneApp) {
         console.log('❌ iOS détecté mais app non installée - notifications désactivées');
@@ -90,32 +105,38 @@ export const useNotifications = () => {
         return;
       }
 
+      console.log('✅ APIs supportées - activation des notifications');
+      setCanUseNotifications(true);
+
       try {
-        if (!('Notification' in window)) {
-          console.log('❌ API Notification non supportée');
-          setError('Les notifications ne sont pas supportées par ce navigateur');
-          return;
-        }
-
-        if (!('serviceWorker' in navigator)) {
-          console.log('❌ Service Workers non supportés');
-          setError('Les service workers ne sont pas supportés');
-          return;
-        }
-
-        console.log('✅ APIs supportées - activation des notifications');
-        setCanUseNotifications(true);
-
         // Enregistrer le service worker
         const registration = await navigator.serviceWorker.register('/service-worker.js');
         console.log('✅ Service Worker enregistré');
 
-        // Demander automatiquement les permissions
-        const permissionResult = await requestPermission();
-        console.log('🔔 Résultat permission:', permissionResult);
+        // Vérifier le statut actuel des permissions
+        const currentPermission = Notification.permission;
+        console.log('📋 Permission actuelle:', currentPermission);
+        
+        if (currentPermission === 'granted') {
+          setPermissionGranted(true);
+          if (isIOS) {
+            setSubscription({ endpoint: 'ios-local' } as any);
+          } else {
+            await createPushSubscription(registration);
+          }
+          setError(null);
+        } else if (currentPermission === 'default') {
+          // Ne pas demander automatiquement, laisser l'utilisateur décider
+          console.log('⏳ Permission en attente - l\'utilisateur doit autoriser manuellement');
+        } else {
+          console.log('❌ Permission refusée');
+          setError('Les notifications ont été refusées');
+        }
 
-        // Programmer le rappel matinal quotidien
-        scheduleMorningReminder();
+        // Programmer le rappel matinal quotidien si les permissions sont accordées
+        if (currentPermission === 'granted') {
+          scheduleMorningReminder();
+        }
 
       } catch (err) {
         console.error('❌ Erreur lors de l\'initialisation des notifications:', err);
@@ -125,34 +146,6 @@ export const useNotifications = () => {
 
     initializeNotifications();
   }, []);
-
-  // Demander la permission pour les notifications
-  const requestPermission = async () => {
-    try {
-      if (!canUseNotifications) {
-        return false;
-      }
-
-      const permission = await Notification.requestPermission();
-      setPermissionGranted(permission === 'granted');
-
-      if (permission === 'granted') {
-        if (isIOSDevice) {
-          setSubscription({ endpoint: 'ios-local' } as any);
-        } else {
-          const registration = await navigator.serviceWorker.ready;
-          await createPushSubscription(registration);
-        }
-        setError(null);
-      }
-
-      return permission === 'granted';
-    } catch (err) {
-      console.error('Erreur de permission:', err);
-      setError('Erreur lors de la demande de permission');
-      return false;
-    }
-  };
 
   // Créer une souscription push (non-iOS)
   const createPushSubscription = async (registration: ServiceWorkerRegistration) => {
@@ -177,13 +170,73 @@ export const useNotifications = () => {
     }
   };
 
+  // Demander la permission pour les notifications
+  const requestPermission = async () => {
+    try {
+      console.log('🔔 Demande de permission notifications...');
+      
+      if (!canUseNotifications) {
+        console.log('❌ Notifications non disponibles');
+        return false;
+      }
+
+      if (!('Notification' in window)) {
+        console.log('❌ API Notification non supportée');
+        return false;
+      }
+
+      const permission = await Notification.requestPermission();
+      console.log('📋 Résultat permission:', permission);
+      
+      setPermissionGranted(permission === 'granted');
+
+      if (permission === 'granted') {
+        if (isIOSDevice) {
+          setSubscription({ endpoint: 'ios-local' } as any);
+        } else {
+          const registration = await navigator.serviceWorker.ready;
+          await createPushSubscription(registration);
+        }
+        setError(null);
+        
+        // Programmer le rappel matinal maintenant que les permissions sont accordées
+        scheduleMorningReminder();
+      } else if (permission === 'denied') {
+        setError('Les notifications ont été refusées');
+      }
+
+      return permission === 'granted';
+    } catch (err) {
+      console.error('❌ Erreur de permission:', err);
+      setError('Erreur lors de la demande de permission');
+      return false;
+    }
+  };
+
   // Envoyer une notification
   const sendNotification = async (title: string, body: string, data?: any) => {
     try {
-      console.log('📤 Tentative d\'envoi de notification:', { title, body, permissionGranted, isIOSDevice });
+      console.log('📤 Tentative d\'envoi de notification:', { 
+        title, 
+        body, 
+        permissionGranted, 
+        isIOSDevice,
+        canUseNotifications,
+        notificationPermission: Notification.permission 
+      });
       
-      if (!permissionGranted) {
-        console.log('❌ Permission non accordée');
+      if (!canUseNotifications) {
+        console.log('❌ Notifications non disponibles');
+        return false;
+      }
+
+      if (!('Notification' in window)) {
+        console.log('❌ API Notification non supportée');
+        return false;
+      }
+
+      if (Notification.permission !== 'granted') {
+        console.log('❌ Permission non accordée, statut:', Notification.permission);
         return false;
       }
 
@@ -226,6 +279,7 @@ export const useNotifications = () => {
             console.log('✅ Message envoyé au Service Worker');
           } else {
             console.log('❌ Service Worker non actif');
+            return false;
           }
         }
       }
@@ -383,6 +437,7 @@ export const useNotifications = () => {
     canUseNotifications,
     isIOSDevice,
     isStandalone,
+    requestPermission,
     scheduleTaskReminders,
     cancelTaskReminders,
     updateTaskNotifications,

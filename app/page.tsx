@@ -52,7 +52,8 @@ export default function Home() {
     scheduleTaskReminders,
     cancelTaskReminders,
     updateTaskNotifications,
-    sendNotification
+    sendNotification,
+    requestPermission
   } = useNotifications();
 
   // Filtrer les tâches actives et terminées
@@ -434,12 +435,8 @@ export default function Home() {
           <div className="mt-4 flex flex-col space-y-2">
             <button
               onClick={async () => {
-                if ('Notification' in window) {
-                  const permission = await Notification.requestPermission();
-                  alert(`Statut des notifications: ${permission}`);
-                } else {
-                  alert("Les notifications ne sont pas supportées sur ce navigateur");
-                }
+                const result = await requestPermission();
+                alert(`Statut des notifications: ${result ? 'Autorisées' : 'Refusées ou erreur'}`);
               }}
               className="bg-blue-500/80 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium"
             >
@@ -448,7 +445,10 @@ export default function Home() {
             
             <button
               onClick={async () => {
-                await sendNotification('🧪 Test de notification', 'Si vous voyez ceci, les notifications fonctionnent !', { tag: 'test' });
+                const success = await sendNotification('🧪 Test de notification', 'Si vous voyez ceci, les notifications fonctionnent !', { tag: 'test' });
+                if (!success) {
+                  alert('Échec de l\'envoi de la notification. Vérifiez les permissions.');
+                }
               }}
               className="bg-red-500/80 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium"
             >
