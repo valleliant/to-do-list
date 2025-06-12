@@ -72,27 +72,17 @@ export const useNotifications = () => {
       const isIOS = checkIsIOS();
       const isStandaloneApp = checkIsStandalone();
       
-      // Logs de diagnostic temporaires
-      console.log('🔍 Diagnostic notifications:');
-      console.log('- iOS détecté:', isIOS);
-      console.log('- Mode standalone:', isStandaloneApp);
-      console.log('- User Agent:', navigator.userAgent);
-      console.log('- Display mode standalone:', window.matchMedia('(display-mode: standalone)').matches);
-      console.log('- iOS standalone:', (window.navigator as any).standalone);
-      
       setIsIOSDevice(isIOS);
       setIsStandalone(isStandaloneApp);
       
       // Vérifier les APIs nécessaires
       if (!('Notification' in window)) {
-        console.log('❌ API Notification non supportée');
         setError('Les notifications ne sont pas supportées par ce navigateur');
         setCanUseNotifications(false);
         return;
       }
 
       if (!('serviceWorker' in navigator)) {
-        console.log('❌ Service Workers non supportés');
         setError('Les service workers ne sont pas supportés');
         setCanUseNotifications(false);
         return;
@@ -100,22 +90,18 @@ export const useNotifications = () => {
 
       // Sur iOS, les notifications ne fonctionnent que si l'app est installée
       if (isIOS && !isStandaloneApp) {
-        console.log('❌ iOS détecté mais app non installée - notifications désactivées');
         setCanUseNotifications(false);
         return;
       }
 
-      console.log('✅ APIs supportées - activation des notifications');
       setCanUseNotifications(true);
 
       try {
         // Enregistrer le service worker
         const registration = await navigator.serviceWorker.register('/service-worker.js');
-        console.log('✅ Service Worker enregistré');
 
         // Vérifier le statut actuel des permissions
         const currentPermission = Notification.permission;
-        console.log('📋 Permission actuelle:', currentPermission);
         
         if (currentPermission === 'granted') {
           setPermissionGranted(true);
@@ -125,11 +111,7 @@ export const useNotifications = () => {
             await createPushSubscription(registration);
           }
           setError(null);
-        } else if (currentPermission === 'default') {
-          // Ne pas demander automatiquement, laisser l'utilisateur décider
-          console.log('⏳ Permission en attente - l\'utilisateur doit autoriser manuellement');
-        } else {
-          console.log('❌ Permission refusée');
+        } else if (currentPermission === 'denied') {
           setError('Les notifications ont été refusées');
         }
 
@@ -139,7 +121,7 @@ export const useNotifications = () => {
         }
 
       } catch (err) {
-        console.error('❌ Erreur lors de l\'initialisation des notifications:', err);
+        console.error('Erreur lors de l\'initialisation des notifications:', err);
         setError('Erreur lors de l\'initialisation des notifications');
       }
     };
@@ -173,21 +155,15 @@ export const useNotifications = () => {
   // Demander la permission pour les notifications
   const requestPermission = async () => {
     try {
-      console.log('🔔 Demande de permission notifications...');
-      
       if (!canUseNotifications) {
-        console.log('❌ Notifications non disponibles');
         return false;
       }
 
       if (!('Notification' in window)) {
-        console.log('❌ API Notification non supportée');
         return false;
       }
 
       const permission = await Notification.requestPermission();
-      console.log('📋 Résultat permission:', permission);
-      
       setPermissionGranted(permission === 'granted');
 
       if (permission === 'granted') {
@@ -207,7 +183,7 @@ export const useNotifications = () => {
 
       return permission === 'granted';
     } catch (err) {
-      console.error('❌ Erreur de permission:', err);
+      console.error('Erreur de permission:', err);
       setError('Erreur lors de la demande de permission');
       return false;
     }
@@ -216,27 +192,15 @@ export const useNotifications = () => {
   // Envoyer une notification
   const sendNotification = async (title: string, body: string, data?: any) => {
     try {
-      console.log('📤 Tentative d\'envoi de notification:', { 
-        title, 
-        body, 
-        permissionGranted, 
-        isIOSDevice,
-        canUseNotifications,
-        notificationPermission: Notification.permission 
-      });
-      
       if (!canUseNotifications) {
-        console.log('❌ Notifications non disponibles');
         return false;
       }
 
       if (!('Notification' in window)) {
-        console.log('❌ API Notification non supportée');
         return false;
       }
 
       if (Notification.permission !== 'granted') {
-        console.log('❌ Permission non accordée, statut:', Notification.permission);
         return false;
       }
 
@@ -248,7 +212,6 @@ export const useNotifications = () => {
       };
 
       if (isIOSDevice) {
-        console.log('📱 Envoi notification iOS directe');
         // Notification directe pour iOS
         const notification = new Notification(title, {
           body,
@@ -264,10 +227,7 @@ export const useNotifications = () => {
           window.focus();
           notification.close();
         };
-        
-        console.log('✅ Notification iOS créée');
       } else {
-        console.log('🖥️ Envoi notification via Service Worker');
         // Via service worker pour autres plateformes
         if ('serviceWorker' in navigator) {
           const registration = await navigator.serviceWorker.ready;
@@ -276,9 +236,7 @@ export const useNotifications = () => {
               type: 'SIMULATE_PUSH',
               data: notificationData
             });
-            console.log('✅ Message envoyé au Service Worker');
           } else {
-            console.log('❌ Service Worker non actif');
             return false;
           }
         }
@@ -286,7 +244,7 @@ export const useNotifications = () => {
 
       return true;
     } catch (err) {
-      console.error('❌ Erreur lors de l\'envoi de la notification:', err);
+      console.error('Erreur lors de l\'envoi de la notification:', err);
       return false;
     }
   };
