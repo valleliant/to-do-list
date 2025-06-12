@@ -148,14 +148,6 @@ public/
 - ✅ Service Worker optimisé
 - ✅ Gestion d'erreurs robuste
 
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou soumettre une pull request.
-
 ---
 
 Développé avec ❤️ pour une gestion de tâches moderne et efficace. 

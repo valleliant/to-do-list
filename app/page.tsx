@@ -119,19 +119,19 @@ export default function Home() {
     );
     setShowAddTaskForm(false);
     
-    // Programmer les rappels pour la nouvelle tâche
+    // Notification immédiate de confirmation pour chaque nouvelle tâche
+    if (newTask && canUseNotifications) {
+      const priorityEmoji = newTask.priority === 'high' ? '🔴' : newTask.priority === 'medium' ? '🟡' : '🟢';
+      await sendNotification(
+        '✅ Nouvelle tâche créée !', 
+        `${priorityEmoji} ${newTask.title}`, 
+        { tag: 'task-created' }
+      );
+    }
+    
+    // Programmer les rappels pour la nouvelle tâche si elle a une date d'échéance
     if (newTask && newTask.dueDate) {
       await scheduleTaskReminders(newTask);
-      
-      // Notification immédiate de confirmation
-      if (canUseNotifications) {
-        const priorityEmoji = newTask.priority === 'high' ? '🔴' : newTask.priority === 'medium' ? '🟡' : '🟢';
-        await sendNotification(
-          '✅ Tâche ajoutée !', 
-          `${priorityEmoji} ${newTask.title}`, 
-          { tag: 'task-added' }
-        );
-      }
     }
   };
 
@@ -262,7 +262,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#4B9BC3] text-white overflow-y-auto pb-24 flex flex-col">
+    <main className="min-h-screen bg-[#4B9BC3] text-white overflow-y-auto pb-6 flex flex-col">
       {/* Formulaire du nom d'utilisateur */}
       <AnimatePresence>
         {showUserNameInput && (
@@ -356,7 +356,7 @@ export default function Home() {
         )}
       </AnimatePresence>
       
-      <div className="max-w-md mx-auto pt-12 px-4 pb-32 overflow-y-auto">
+      <div className="max-w-md mx-auto pt-12 px-4 pb-20 overflow-y-auto">
         {/* En-tête avec message de bienvenue */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -493,32 +493,12 @@ export default function Home() {
       {/* Bouton d'ajout de tâche */}
       <motion.button
         onClick={() => setShowAddTaskForm(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-white text-blue-500 rounded-full shadow-lg flex items-center justify-center text-3xl"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-white text-blue-500 rounded-full shadow-lg flex items-center justify-center text-3xl"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
       >
         +
       </motion.button>
-      
-      {/* Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#4B9BC3] py-4 px-4 flex justify-around border-t border-white/20">
-        <button className="text-white p-2 flex flex-col items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </button>
-        <button className="text-white p-2 flex flex-col items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        </button>
-        <button className="text-white p-2 flex flex-col items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </button>
-      </div>
     </main>
   );
 } 
