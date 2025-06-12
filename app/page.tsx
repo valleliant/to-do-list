@@ -430,15 +430,31 @@ export default function Home() {
             )}
           </div>
           
-          {/* Bouton de test des notifications - temporaire */}
-          <button
-            onClick={async () => {
-              await sendNotification('🧪 Test de notification', 'Si vous voyez ceci, les notifications fonctionnent !', { tag: 'test' });
-            }}
-            className="mt-4 bg-red-500/80 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium"
-          >
-            🧪 Tester les notifications
-          </button>
+          {/* Boutons de test des notifications - temporaires */}
+          <div className="mt-4 flex flex-col space-y-2">
+            <button
+              onClick={async () => {
+                if ('Notification' in window) {
+                  const permission = await Notification.requestPermission();
+                  alert(`Statut des notifications: ${permission}`);
+                } else {
+                  alert("Les notifications ne sont pas supportées sur ce navigateur");
+                }
+              }}
+              className="bg-blue-500/80 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium"
+            >
+              🔔 Demander l'autorisation
+            </button>
+            
+            <button
+              onClick={async () => {
+                await sendNotification('🧪 Test de notification', 'Si vous voyez ceci, les notifications fonctionnent !', { tag: 'test' });
+              }}
+              className="bg-red-500/80 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium"
+            >
+              🧪 Tester les notifications
+            </button>
+          </div>
         </motion.div>
         
         {/* État des notifications */}
