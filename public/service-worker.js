@@ -19,7 +19,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Cache ouvert');
         return cache.addAll(urlsToCache);
       })
   );
@@ -27,13 +26,11 @@ self.addEventListener('install', (event) => {
 
 // Activation du service worker
 self.addEventListener('activate', (event) => {
-  // Nettoyer les anciens caches
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Suppression de l\'ancien cache', cacheName);
             return caches.delete(cacheName);
           }
         })

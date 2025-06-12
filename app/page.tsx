@@ -18,7 +18,7 @@ import SwipeHint from './components/SwipeHint';
 
 export default function Home() {
   // États locaux
-  const [userName, setUserName] = useState('Thibaud');
+  const [userName, setUserName] = useState('');
   const [showUserNameInput, setShowUserNameInput] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [viewingTask, setViewingTask] = useState<TaskType | null>(null);
@@ -42,7 +42,8 @@ export default function Home() {
     weather, 
     loading: weatherLoading, 
     error: weatherError, 
-    refreshWeather 
+    refreshWeather,
+    refreshLocation
   } = useWeather();
   
   const { 
@@ -391,7 +392,16 @@ export default function Home() {
           <div className="inline-block bg-black/20 backdrop-blur-sm rounded-full px-4 py-1 text-sm">
             {weather ? (
               <div className="flex items-center">
-                <span>Fribourg</span>
+                <span>{weather.location}</span>
+                <button 
+                  onClick={refreshLocation}
+                  className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors"
+                  title="Rafraîchir la localisation"
+                >
+                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
+                </button>
                 <span className="mx-2">•</span>
                 <span className="flex items-center">
                   <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
@@ -399,6 +409,21 @@ export default function Home() {
                   </svg>
                   {weather.temperature.toFixed(0)}°
                 </span>
+              </div>
+            ) : weatherLoading ? (
+              <span>Localisation...</span>
+            ) : weatherError ? (
+              <div className="flex items-center">
+                <span>Météo indisponible</span>
+                <button 
+                  onClick={refreshLocation}
+                  className="ml-2 p-1 hover:bg-white/20 rounded-full transition-colors"
+                  title="Réessayer la localisation"
+                >
+                  <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
             ) : (
               <span>Chargement...</span>

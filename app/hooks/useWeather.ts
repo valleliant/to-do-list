@@ -96,8 +96,9 @@ export const useWeather = () => {
   // Fonction pour obtenir le nom de la ville à partir des coordonnées
   const getCityName = async (lat: number, lon: number): Promise<string> => {
     try {
+      // Utiliser l'API de géocodage inversé d'OpenStreetMap (Nominatim)
       const response = await fetch(
-        `${GEOCODING_API_URL}?latitude=${lat}&longitude=${lon}&count=1&language=fr&format=json`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1&accept-language=fr`
       );
       
       if (!response.ok) {
@@ -106,13 +107,40 @@ export const useWeather = () => {
       
       const data = await response.json();
       
-      if (data.results && data.results.length > 0) {
-        return data.results[0].name || 'Localisation inconnue';
+      // Extraire le nom de la ville/commune
+      let cityName = 'Localisation inconnue';
+      
+      if (data.address) {
+        cityName = data.address.city || 
+                   data.address.town || 
+                   data.address.village || 
+                   data.address.municipality || 
+                   data.address.county ||
+                   data.display_name?.split(',')[0] ||
+                   'Localisation inconnue';
       }
       
-      return 'Localisation inconnue';
+      return cityName;
+      
     } catch (error) {
       console.error('Erreur géocodage:', error);
+      
+      // Fallback avec l'API Open-Meteo
+      try {
+        const fallbackResponse = await fetch(
+          `${GEOCODING_API_URL}?latitude=${lat}&longitude=${lon}&count=1&language=fr&format=json`
+        );
+        
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          if (fallbackData.results && fallbackData.results.length > 0) {
+            return fallbackData.results[0].name || 'Localisation inconnue';
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Erreur fallback géocodage:', fallbackError);
+      }
+      
       return 'Localisation inconnue';
     }
   };
@@ -128,16 +156,22 @@ export const useWeather = () => {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setCoords({
+          const newCoords = {
             lat: position.coords.latitude,
             lon: position.coords.longitude
-          });
+          };
+          setCoords(newCoords);
         },
         (err) => {
+          console.error('Erreur de géolocalisation:', err);
           setError(`Erreur de géolocalisation: ${err.message}`);
           setLoading(false);
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { 
+          enableHighAccuracy: true, 
+          timeout: 10000, // Augmenter le timeout à 10 secondes
+          maximumAge: 0 // Forcer une nouvelle localisation
+        }
       );
     };
 
@@ -234,10 +268,45 @@ export const useWeather = () => {
     }
   };
 
+  // Fonction pour forcer une nouvelle géolocalisation
+  const refreshLocation = () => {
+    setLoading(true);
+    setError(null);
+    setCoords(null);
+    setWeather(null);
+
+    if (!navigator.geolocation) {
+      setError('La géolocalisation n\'est pas supportée par ce navigateur');
+      setLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newCoords = {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude
+        };
+        setCoords(newCoords);
+      },
+      (err) => {
+        console.error('Erreur de géolocalisation (refresh):', err);
+        setError(`Erreur de géolocalisation: ${err.message}`);
+        setLoading(false);
+      },
+      { 
+        enableHighAccuracy: true, 
+        timeout: 10000,
+        maximumAge: 0 // Forcer une nouvelle localisation
+      }
+    );
+  };
+
   return {
     weather,
     loading,
     error,
-    refreshWeather
+    refreshWeather,
+    refreshLocation
   };
 }; 

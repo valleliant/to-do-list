@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Task } from './useTasks';
 
-// Clés VAPID pour les notifications push
-const VAPID_PUBLIC_KEY = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzuUPet5D_gSyZgniz65YZjpxwQ-_gem6YWaUswV8eOuVybf8yvyEIxSu9e6xIf-JjwKwZgc2W-j3JIXSR50AKQ';
+// Clés VAPID pour les notifications push - À remplacer par vos propres clés en production
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_KEY || 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzuUPet5D_gSyZgniz65YZjpxwQ-_gem6YWaUswV8eOuVybf8yvyEIxSu9e6xIf-JjwKwZgc2W-j3JIXSR50AKQ';
 
 // Configuration des rappels selon la priorité
 const REMINDER_INTERVALS = {

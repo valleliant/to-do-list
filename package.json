@@ -1,13 +1,28 @@
 {
   "name": "to-do-list",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Une PWA moderne de gestion de tâches avec notifications push et mode hors ligne",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "build:analyze": "ANALYZE=true npm run build",
+    "export": "next build && next export"
   },
+  "keywords": [
+    "todo",
+    "pwa",
+    "nextjs",
+    "typescript",
+    "notifications",
+    "offline"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
     "framer-motion": "^10.18.0",
     "localforage": "^1.10.0",
@@ -26,5 +41,9 @@
     "eslint": "^8.52.0",
     "eslint-config-next": "^14.1.0",
     "postcss": "^8.4.31"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
