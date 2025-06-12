@@ -72,39 +72,53 @@ export const useNotifications = () => {
       const isIOS = checkIsIOS();
       const isStandaloneApp = checkIsStandalone();
       
+      // Logs de diagnostic temporaires
+      console.log('🔍 Diagnostic notifications:');
+      console.log('- iOS détecté:', isIOS);
+      console.log('- Mode standalone:', isStandaloneApp);
+      console.log('- User Agent:', navigator.userAgent);
+      console.log('- Display mode standalone:', window.matchMedia('(display-mode: standalone)').matches);
+      console.log('- iOS standalone:', (window.navigator as any).standalone);
+      
       setIsIOSDevice(isIOS);
       setIsStandalone(isStandaloneApp);
       
       // Sur iOS, les notifications ne fonctionnent que si l'app est installée
       if (isIOS && !isStandaloneApp) {
+        console.log('❌ iOS détecté mais app non installée - notifications désactivées');
         setCanUseNotifications(false);
         return;
       }
 
       try {
         if (!('Notification' in window)) {
+          console.log('❌ API Notification non supportée');
           setError('Les notifications ne sont pas supportées par ce navigateur');
           return;
         }
 
         if (!('serviceWorker' in navigator)) {
+          console.log('❌ Service Workers non supportés');
           setError('Les service workers ne sont pas supportés');
           return;
         }
 
+        console.log('✅ APIs supportées - activation des notifications');
         setCanUseNotifications(true);
 
         // Enregistrer le service worker
         const registration = await navigator.serviceWorker.register('/service-worker.js');
+        console.log('✅ Service Worker enregistré');
 
         // Demander automatiquement les permissions
-        await requestPermission();
+        const permissionResult = await requestPermission();
+        console.log('🔔 Résultat permission:', permissionResult);
 
         // Programmer le rappel matinal quotidien
         scheduleMorningReminder();
 
       } catch (err) {
-        console.error('Erreur lors de l\'initialisation des notifications:', err);
+        console.error('❌ Erreur lors de l\'initialisation des notifications:', err);
         setError('Erreur lors de l\'initialisation des notifications');
       }
     };
@@ -166,7 +180,12 @@ export const useNotifications = () => {
   // Envoyer une notification
   const sendNotification = async (title: string, body: string, data?: any) => {
     try {
-      if (!permissionGranted) return false;
+      console.log('📤 Tentative d\'envoi de notification:', { title, body, permissionGranted, isIOSDevice });
+      
+      if (!permissionGranted) {
+        console.log('❌ Permission non accordée');
+        return false;
+      }
 
       const notificationData = {
         title,
@@ -176,6 +195,7 @@ export const useNotifications = () => {
       };
 
       if (isIOSDevice) {
+        console.log('📱 Envoi notification iOS directe');
         // Notification directe pour iOS
         const notification = new Notification(title, {
           body,
@@ -191,7 +211,10 @@ export const useNotifications = () => {
           window.focus();
           notification.close();
         };
+        
+        console.log('✅ Notification iOS créée');
       } else {
+        console.log('🖥️ Envoi notification via Service Worker');
         // Via service worker pour autres plateformes
         if ('serviceWorker' in navigator) {
           const registration = await navigator.serviceWorker.ready;
@@ -200,13 +223,16 @@ export const useNotifications = () => {
               type: 'SIMULATE_PUSH',
               data: notificationData
             });
+            console.log('✅ Message envoyé au Service Worker');
+          } else {
+            console.log('❌ Service Worker non actif');
           }
         }
       }
 
       return true;
     } catch (err) {
-      console.error('Erreur lors de l\'envoi de la notification:', err);
+      console.error('❌ Erreur lors de l\'envoi de la notification:', err);
       return false;
     }
   };

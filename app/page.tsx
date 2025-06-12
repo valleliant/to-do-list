@@ -429,6 +429,18 @@ export default function Home() {
               <span>Chargement...</span>
             )}
           </div>
+          
+          {/* Bouton de test des notifications - temporaire */}
+          {typeof window !== 'undefined' && (window.location.search.includes('test=true') || process.env.NODE_ENV === 'development') && (
+            <button
+              onClick={async () => {
+                await sendNotification('🧪 Test de notification', 'Si vous voyez ceci, les notifications fonctionnent !', { tag: 'test' });
+              }}
+              className="mt-4 bg-red-500/80 backdrop-blur-sm rounded-lg px-4 py-2 text-sm font-medium"
+            >
+              🧪 Tester les notifications
+            </button>
+          )}
         </motion.div>
         
         {/* État des notifications */}
