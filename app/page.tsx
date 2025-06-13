@@ -27,6 +27,7 @@ export default function Home() {
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  
   // Hooks personnalisés
   const { 
     tasks, 
