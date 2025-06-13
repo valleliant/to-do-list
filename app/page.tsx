@@ -10,11 +10,11 @@ import { getGreeting } from './utils/greeting';
 import Task from './components/Task';
 import TaskDetail from './components/TaskDetail';
 import TaskForm from './components/TaskForm';
-import WeatherWidget from './components/WeatherWidget';
-import FocusMode from './components/FocusMode';
 import NotificationStatus from './components/NotificationStatus';
 import CompletedTasksMenu from './components/CompletedTasksMenu';
 import SwipeHint from './components/SwipeHint';
+import NotificationPermissionModal from './components/NotificationPermissionModal';
+import OfflineIndicator from './components/OfflineIndicator';
 
 export default function Home() {
   // États locaux
@@ -22,9 +22,9 @@ export default function Home() {
   const [showUserNameInput, setShowUserNameInput] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [viewingTask, setViewingTask] = useState<TaskType | null>(null);
-  const [isFocusMode, setIsFocusMode] = useState(false);
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   
@@ -75,6 +75,30 @@ export default function Home() {
       setShowSwipeHint(true);
     }
   }, [activeTasks.length]);
+
+  // Vérifier si on doit afficher la modal de notifications au premier lancement
+  useEffect(() => {
+    const hasSeenNotificationModal = localStorage.getItem('hasSeenNotificationModal');
+    const shouldShowModal = !hasSeenNotificationModal && 
+                           canUseNotifications && 
+                           !permissionGranted && 
+                           Notification.permission !== 'denied';
+    
+    if (shouldShowModal) {
+      // Attendre un peu avant d'afficher la modal pour une meilleure UX
+      const timer = setTimeout(() => {
+        setShowNotificationModal(true);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [canUseNotifications, permissionGranted]);
+
+  // Gérer la fermeture de la modal de notifications
+  const handleCloseNotificationModal = () => {
+    setShowNotificationModal(false);
+    localStorage.setItem('hasSeenNotificationModal', 'true');
+  };
 
   // Format de date pour l'affichage
   const formatDate = (date: Date) => {
@@ -339,24 +363,26 @@ export default function Home() {
         )}
       </AnimatePresence>
       
-      {/* Mode Focus */}
-      <AnimatePresence>
-        {isFocusMode && (
-          <FocusMode 
-            onClose={() => setIsFocusMode(false)} 
-          />
-        )}
-      </AnimatePresence>
+
       
-      {/* Aide au glissement */}
-      <AnimatePresence>
-        {showSwipeHint && (
-          <SwipeHint
-            isVisible={showSwipeHint}
-            onDismiss={handleDismissSwipeHint}
-          />
-        )}
-      </AnimatePresence>
+              {/* Aide au glissement */}
+        <AnimatePresence>
+          {showSwipeHint && (
+            <SwipeHint
+              isVisible={showSwipeHint}
+              onDismiss={handleDismissSwipeHint}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Modal de demande de permission pour les notifications */}
+        <NotificationPermissionModal 
+          isVisible={showNotificationModal} 
+          onClose={handleCloseNotificationModal} 
+        />
+
+        {/* Indicateur de connexion hors ligne */}
+        <OfflineIndicator />
       
       <div className="max-w-md mx-auto pt-12 px-4 pb-20 overflow-y-auto">
         {/* En-tête avec message de bienvenue */}
